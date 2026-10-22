@@ -1,0 +1,91 @@
+Scope: APLUX proprietary contributions in the following precompiled SDK libraries:
+适用范围：下列预编译 SDK 库中的阿加犀专有部分：
+  libaudio8_asr.so
+
+Third-party components keep their own licenses; see THIRD_PARTY_NOTICES.txt and
+LICENSES/ below. Existing independently granted rights are not revoked.
+
+Pandora Model and SDK License Agreement
+============================================================
+Version: 1.0
+Effective date: 2026-10-15
+
+This agreement is between 成都阿加犀智能科技有限公司 (referred to as “APLUX” or the “Licensor”) and the individual or legal entity downloading or using materials covered by this agreement (“you” or the “User”). You must have authority to act for any organization you represent. Downloading or using materials expressly accompanied by or referencing this agreement constitutes acceptance. If you disagree, do not download or use those materials. Merely viewing this page does not constitute acceptance.
+
+1. Scope and licensing boundaries
+------------------------------------------------------------
+This agreement applies to Pandora proprietary SDKs, precompiled libraries (including .so files), model files and accompanying proprietary configurations, tensors and documentation that APLUX has the right to license and that are expressly designated as subject to this agreement (the “Licensed Materials”). It grants only rights that APLUX is entitled to grant.
+
+Parts of Demo frontends, application logic, interface bindings and example code expressly released under the Apache License 2.0 remain governed by Apache-2.0, including its terms for modification, commercial use and redistribution. The proprietary SDK restrictions in this agreement do not apply to that open-source code. An open-source interface binding does not place the proprietary SDK it calls under Apache-2.0.
+
+Files or components with an express separate license are governed by that applicable license; binary form alone does not subject them to this agreement. This agreement does not retroactively revoke or reduce rights lawfully obtained under Apache-2.0 or another license. A separately signed commercial agreement takes precedence to the extent it expressly provides otherwise.
+
+2. Free license
+------------------------------------------------------------
+Subject to this agreement and applicable third-party terms, APLUX grants you a non-exclusive, limited, non-transferable, no-fee license to download, install, run, copy and integrate the Licensed Materials for the purposes below. Individual developers, corporate development teams and developers or integrators engaged for such projects may use them within this scope.
+
+You may charge customers for development, integration, adaptation, testing or validation services for these projects. Paid PoCs and small-device pilots do not require a separate APLUX commercial license merely because fees are charged. Being a business does not, by itself, turn internal development, evaluation or demonstrations into a commercial rollout requiring authorization.
+- Personal learning, feature evaluation, technical research and internal assessment.
+- Application development, adaptation, integration, testing and benchmarking.
+- Product or solution demonstrations, customer presentations and proofs of concept (PoCs), including paid PoCs.
+- Pilots on a small number of devices to validate feasibility, results or integration.
+
+3. Pilots and commercial rollout
+------------------------------------------------------------
+Pilots and PoCs must remain in a development or validation phase. Their status is assessed in light of the project purpose, device count, scope, nature of deliveries and actual operation; this agreement sets no universal device-count threshold. You may not evade commercial licensing by labeling a rollout a “pilot” or “PoC”, splitting orders, staging deliveries or indefinitely extending validation.
+
+For permitted demonstrations, PoCs and small-device pilots, you may deliver necessary Licensed Materials to project customers as embedded parts of test applications or pilot devices, accompanied by this agreement and applicable third-party notices. Customers running or using the materials must also comply with the applicable terms. Such delivery does not grant rights for volume production, volume deliveries or production deployment at scale.
+
+4. Commercial authorization
+------------------------------------------------------------
+Before volume production, volume sales, volume deliveries or production deployment at scale of products or solutions containing the Licensed Materials, you must contact APLUX through the official channel from which you obtained the models or SDK and obtain written commercial authorization. The free license does not automatically extend to those stages. Authorized products, customers, quantities or scope, term, fees, delivery methods and support are governed by the separately signed agreement.
+
+APLUX commercial authorization does not replace licenses required by the original model rights holder or other third parties. Even with APLUX authorization, you must satisfy applicable third-party conditions for commercial use.
+
+5. Restrictions on proprietary materials
+------------------------------------------------------------
+Except where a restriction is prohibited by applicable law, expressly permitted by this agreement or separately authorized in writing by APLUX, you must not undertake the activities below with proprietary materials covered here. These restrictions do not reduce rights granted by Apache-2.0 or other separate licenses.
+- Reverse engineer, decompile or disassemble proprietary SDKs or precompiled libraries, or attempt to extract their source code, algorithms or internal implementation.
+- Circumvent encryption, license verification or other technical protections of models or SDKs, or extract or disclose their keys.
+- Sell, sublicense, publicly release or offer proprietary SDKs or models for download as standalone products, or use them to operate a standalone SDK or model-package distribution service for third parties. Embedded pilot deliveries permitted by Section 3 are excepted.
+- Remove or alter copyright, license, attribution, proprietary-rights or third-party notices, or falsely claim an official APLUX product, authorization or endorsement.
+
+6. Third-party software and models
+------------------------------------------------------------
+The Licensed Materials may depend on third-party models, open-source software, runtime libraries and other components. Their LICENSE files, NOTICE files, model cards and accompanying terms continue to apply independently. Rights, restrictions, attribution and redistribution obligations for third-party materials are governed by their applicable licenses; this agreement does not replace, expand or revoke them.
+
+Some upstream models permit research or evaluation only and require a separate license from their rights holder for commercial use. The provisions here for free development, paid PoCs, pilots and commercial authorization do not expand upstream permissions. An activity may incur no APLUX license fee yet still require upstream authorization. Check the terms accompanying each Demo, SDK and model download before use.
+
+7. Intellectual property and branding
+------------------------------------------------------------
+The Licensed Materials are licensed, not sold. APLUX and the respective rights holders retain intellectual property in their existing materials. Ownership of application code and improvements you create is determined by applicable law and the relevant licenses; using Pandora does not itself require transfer of your application code to APLUX. No patent, trademark or other rights are implied beyond those expressly granted; rights expressly granted by separate open-source licenses are unaffected.
+
+This agreement does not grant rights to promote your products using APLUX, 阿加犀 or Pandora names, logos or trademarks. Reasonable use to truthfully identify origin or meet attribution requirements is excepted, but must not imply official certification, partnership or endorsement. Promotional videos, images and sample assets are also subject to their respective permissions.
+
+8. User responsibilities and lawful use
+------------------------------------------------------------
+You must comply with applicable laws, export controls and sanctions, and bear responsibility for your inputs, outputs, data sources, deployment and use cases. Before using another person's voice, image, personal information or other protected content, obtain necessary authorization or consent, or establish another lawful basis. Use for unlawful impersonation, fraud, infringement or privacy violations is prohibited.
+
+AI outputs may contain errors, omissions or bias. You must verify results and their suitability. Applications involving personal safety, healthcare, critical infrastructure or decisions materially affecting rights require the human oversight, safety validation and safeguards required by applicable law and the use case. Decisions should not rely solely on unvalidated Demo outputs.
+
+9. Disclaimer and support
+------------------------------------------------------------
+To the extent permitted by applicable law, the Licensed Materials are provided “as is”. APLUX makes no express or implied warranty of accuracy, continuous availability, fitness for a particular purpose, merchantability or non-infringement. Demo results, benchmarks and hardware-support descriptions do not constitute performance commitments for all environments or production products.
+
+The free license does not include ongoing maintenance, updates, technical support, adaptation services or service-level guarantees. Such services, if required, must be separately agreed.
+
+10. Limitation of liability
+------------------------------------------------------------
+To the maximum extent permitted by applicable law, APLUX is not liable for indirect, incidental, special or consequential losses arising from use of or inability to use the Licensed Materials, including loss of profits, business opportunities or data. This section does not exclude or limit liability for intentional misconduct, gross negligence or liability that applicable law does not permit to be excluded or limited. A separately signed commercial agreement governs liability where it provides otherwise.
+
+11. Term and termination
+------------------------------------------------------------
+This agreement takes effect upon your acceptance. You may terminate it by ceasing use and deleting the Licensed Materials. APLUX may terminate the license by notice if you breach this agreement; for a remediable breach, APLUX may require correction within a reasonable period specified in the notice. Material breaches, such as unauthorized commercial rollout at scale, reverse engineering or circumvention of protections, may result in immediate termination.
+
+After termination, you must cease using and delivering the Licensed Materials under this agreement and delete or destroy their copies. Termination does not itself terminate rights lawfully held under Apache-2.0 or another separate license. Provisions that by their nature should survive, including intellectual property, third-party licenses, limitations of liability, accrued liabilities and dispute resolution, remain effective.
+
+12. General terms
+------------------------------------------------------------
+This agreement is governed by the laws of the People's Republic of China. The parties should first seek to resolve disputes amicably; unresolved disputes shall be submitted to the competent People's Court at the Licensor's location. Invalidity of an individual provision does not affect the remaining provisions.
+
+This agreement is provided in Chinese and English. In case of interpretive differences, the Chinese version prevails; interpretation rules for third-party licenses remain governed by those licenses. Future revisions must identify their version and effective date and do not retroactively revoke lawfully acquired rights under separate licenses. Special amendments, commercial rollout authorization or additional services require separate written confirmation from APLUX.

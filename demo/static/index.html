@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audio8-ASR-Infinite</title>
+<link rel="icon" type="image/svg+xml" href="/pandora-mark.svg">
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --line: #262b36; --text: #e8eaef; --muted: #8b93a5;
+    --accent: #4f8cff; --fresh: #7fb0ff; --warn: #f0b429; --ok: #3fb950;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+         display: flex; flex-direction: column; overflow: hidden; }
+  header { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--line); flex: none; }
+  header .brand { display: flex; align-items: center; gap: 14px; margin-left: auto; flex: none; }
+  header .brand img { display: block; flex: none; }
+  header .brand .logo { height: 26px; width: auto; }
+  header .brand .divider { width: 1px; height: 22px; background: var(--line); }
+  header .brand .mark { height: 26px; width: 26px; }
+  header .brand .name { font-size: 17px; font-weight: 700; color: var(--text); margin-left: -6px; }
+  header h1 { margin: 0; font-size: 17px; font-weight: 600; }
+  header .sub { color: var(--muted); }
+  header .foot { margin-left: auto; }
+  .chip { padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .chip.running { color: var(--ok); border-color: var(--ok); }
+  .chip.done { color: var(--accent); border-color: var(--accent); }
+  .foot { color: var(--muted); font-size: 12px; }
+  main { flex: 1; min-height: 0; display: grid; gap: 12px; padding: 12px 16px 16px;
+         grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto;
+         grid-template-areas: "stage text" "metrics metrics"; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; min-height: 0; }
+  .stage { grid-area: stage; display: flex; flex-direction: column; gap: 10px; }
+  .vidwrap { flex: 1; min-height: 0; background: #000; border-radius: 8px; overflow: hidden; display: flex; }
+  video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex: none; }
+  .controls label { color: var(--muted); font-size: 12px; }
+  select, button, input[type=number], textarea { background: #0f1115; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font: inherit; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .5; }
+  #videoSel { max-width: 320px; }
+  #upMsg { color: var(--muted); font-size: 12px; }
+  #upMsg.err { color: var(--warn); }
+  #longHint { color: var(--warn); font-size: 12px; display: none; }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; cursor: pointer; }
+  details.settings { position: relative; font-size: 12px; color: var(--muted); }
+  details.settings summary { list-style: none; cursor: pointer; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; }
+  details.settings summary::-webkit-details-marker { display: none; }
+  details.settings[open] summary { border-color: var(--accent); color: var(--text); }
+  details.settings .grid { position: absolute; z-index: 5; bottom: calc(100% + 6px); left: 0; width: min(560px, 80vw);
+         display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 14px; padding: 12px;
+         background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .45); }
+  details.settings label { display: flex; flex-direction: column; gap: 3px; }
+  details.settings input[type=number], details.settings select { width: 100%; padding: 4px 8px; }
+  details.settings .hint { grid-column: 1 / -1; }
+  .right { grid-area: text; display: flex; flex-direction: column; }
+  .right .bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex: none; }
+  .right h2 { margin: 0 auto 0 0; font-size: 13px; font-weight: 500; color: var(--muted); }
+  #hotwordWords { width: 100%; min-height: 58px; resize: vertical; box-sizing: border-box; }
+  details.settings label.hotword-enable { flex-direction: row; align-items: center; grid-column: 1 / -1; }
+  details.settings label.hotword-list { grid-column: 1 / -1; }
+  .right .bar button { padding: 3px 10px; font-size: 12px; }
+  #transcript { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; font-size: 19px; line-height: 1.65; white-space: pre-wrap; }
+  #transcript::-webkit-scrollbar { display: none; }
+  #transcript .stamp { color: var(--accent); font-size: 13px; cursor: pointer; margin-right: 6px; font-variant-numeric: tabular-nums; }
+  #transcript .stamp:hover { text-decoration: underline; }
+  #transcript .sep { display: block; color: var(--muted); font-size: 13px; text-align: center; margin: 4px 0; }
+  #transcript .fresh { color: var(--fresh); animation: settle 1.4s ease-out forwards; }
+  @keyframes settle { to { color: var(--text); } }
+  #transcript .cursor { display: inline-block; width: 2px; height: 1.1em; background: var(--accent); vertical-align: -0.15em; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  #notice { display: none; margin-top: 8px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--warn); color: var(--warn); font-size: 12px; flex: none; }
+  .metrics { grid-area: metrics; display: grid; gap: 10px; height: 150px;
+             grid-template-columns: 250px 200px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr); }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; }
+  .stat, .box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-width: 0; }
+  .stat .k { color: var(--muted); font-size: 11px; white-space: nowrap; }
+  .stat .v { font-size: 17px; font-variant-numeric: tabular-nums; }
+  .box { display: flex; flex-direction: column; }
+  .box .hd { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .box .hd b { color: var(--text); font-weight: 500; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; }
+  .box canvas { width: 100%; height: 104px; display: block; margin-top: 4px; }
+  .meter { position: relative; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin: 8px 0 6px; }
+  .meter .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--muted); transition: width .08s linear; }
+  .meter .fill.speech { background: var(--ok); }
+  .meter .fill.on { background: var(--accent); }
+  .meter .mark { position: absolute; top: 0; bottom: 0; width: 2px; left: 50%; background: var(--warn); }
+  .silero b { font-size: 17px; font-weight: 500; color: var(--text); font-variant-numeric: tabular-nums; }
+  .silero .g { color: var(--muted); font-size: 12px; margin-top: auto; }
+  .eotbox canvas { height: 64px; margin-top: 0; }
+  .legend { display: flex; gap: 12px; font-size: 11px; color: var(--muted); }
+  .legend i { display: inline-block; width: 10px; height: 3px; vertical-align: middle; margin-right: 4px; }
+  #help { position: fixed; inset: 0; z-index: 20; background: rgba(8, 10, 14, .72); display: none; align-items: center; justify-content: center; padding: 24px; }
+  #help.on { display: flex; }
+  #help .doc { position: relative; width: min(860px, 100%); max-height: 100%; overflow-y: auto; background: var(--panel); border: 1px solid var(--line);
+               border-radius: 12px; padding: 22px 28px 26px; box-shadow: 0 12px 40px rgba(0, 0, 0, .5); line-height: 1.6; }
+  #help h2 { margin: 0 0 4px; font-size: 18px; }
+  #help h3 { margin: 22px 0 6px; font-size: 14px; color: var(--accent); }
+  #help p, #help li { color: var(--text); font-size: 13px; }
+  #help .muted { color: var(--muted); font-size: 12px; }
+  #help ol, #help ul { padding-left: 20px; margin: 6px 0; }
+  #help table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 6px 0; }
+  #help th, #help td { text-align: left; vertical-align: top; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+  #help th { color: var(--muted); font-weight: 500; white-space: nowrap; }
+  #help td:first-child { white-space: nowrap; font-weight: 500; }
+  #help kbd { border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; font: inherit; font-size: 12px; }
+  #help .close { position: sticky; top: 0; float: right; margin: -8px -12px 0 0; padding: 2px 10px; font-size: 16px; }
+  #helpBtn { padding: 2px 12px; font-size: 12px; border-radius: 999px; }
+  #overlay { position: fixed; inset: 0; background: rgba(8, 10, 14, .72); display: none; align-items: center; justify-content: center; z-index: 10; }
+  #overlay.on { display: flex; }
+  #overlay .box2 { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 26px 34px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); }
+  #overlay .spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #overlay .sub { color: var(--muted); font-size: 12px; }
+  @media (max-width: 1100px) {
+    body { overflow: auto; height: auto; }
+    main { grid-template-columns: 1fr; grid-template-rows: auto; grid-template-areas: "stage" "text" "metrics"; }
+    .vidwrap { flex: none; aspect-ratio: 16 / 9; }
+    .right { height: 50vh; }
+    .metrics { height: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Audio8-ASR-Infinite</h1><span class="sub">On-device real-time transcription · Qualcomm NPU</span>
+  <span class="foot" id="foot"></span>
+  <button id="helpBtn" title="User manual">Help</button>
+  <span id="state" class="chip">Connecting</span>
+  <div class="brand" aria-label="APLUX | Pandora">
+    <img class="logo" src="/logo.png" alt="APLUX"><span class="divider" aria-hidden="true"></span>
+    <img class="mark" src="/pandora-mark.svg" alt=""><span class="name">Pandora</span>
+  </div>
+</header>
+<main>
+  <section class="panel stage">
+    <div class="vidwrap"><video id="video" controls playsinline preload="auto"></video></div>
+    <div class="controls">
+      <select id="videoSel"></select>
+      <button id="startBtn" class="primary">Start</button>
+      <button id="stopBtn">Stop</button>
+      <select id="upLang" title="Language spoken in the video you upload">
+        <option value="zh">Upload as Chinese</option>
+        <option value="en">Upload as English</option>
+      </select>
+      <button id="upBtn">Upload video</button>
+      <button id="delBtn">Delete</button>
+      <input id="upFile" type="file" accept="video/*,.mkv" hidden>
+      <span id="upMsg"></span>
+    </div>
+    <div class="controls">
+      <label for="clockSel">Audio clock</label>
+      <select id="clockSel">
+        <option value="160">160 ms</option>
+        <option value="80">80 ms</option>
+      </select>
+      <label class="toggle"><input type="checkbox" id="vadChk" checked> Silence gate</label>
+      <details class="settings">
+        <summary>VAD settings</summary>
+        <div class="grid">
+          <label>Silero threshold<input type="number" id="vTh" min="0.1" max="0.95" step="0.05"></label>
+          <label>Look-ahead (s, protects the first word)<input type="number" id="vPre" min="0" max="1.5" step="0.05"></label>
+          <span class="hint">Silence gate: replaces the audio before the first speech onset of each run with silence (applause, noise);
+            after that nothing is changed. Applies from the next Start.</span>
+          <label>End-of-turn horizon<select id="eHz"></select></label>
+          <label>End-of-turn threshold<input type="number" id="eTh" min="0.2" max="0.95" step="0.05" value="0.6"></label>
+          <label>Paragraphs<span><input type="checkbox" id="ePara" checked> new paragraph at end of turn</span></label>
+        </div>
+      </details>
+      <details class="settings">
+        <summary>Hotwords (optional)</summary>
+        <div class="grid">
+          <label class="toggle hotword-enable"><input type="checkbox" id="hotwordEnabled"> Enable hotwords</label>
+          <label class="hotword-list">Words or phrases<textarea id="hotwordWords" aria-label="Hotwords" rows="2" placeholder="Separate words or phrases with commas or new lines"></textarea></label>
+          <label>Top-k<input id="hotwordTopK" type="number" min="0" max="151936" step="1" value="50"></label>
+          <label>First-token boost<input id="hotwordStart" type="number" min="0" max="100" step="0.5" value="6"></label>
+          <label>Continuation boost<input id="hotwordContinuation" type="number" min="0" max="100" step="0.5" value="8"></label>
+          <span class="hint">Applies on the next Start or seek. Prefer relevant terms: boosting can also change ordinary words. Disabled by default.</span>
+        </div>
+      </details>
+      <span id="cfg" class="chip">-</span>
+      <span id="longHint"></span>
+    </div>
+  </section>
+  <section class="panel right">
+    <div class="bar"><h2>Transcript</h2>
+      <button id="copyBtn">Copy</button><button id="dlBtn">Export</button><button id="clearBtn">Clear</button></div>
+    <div id="transcript"><span class="cursor"></span></div>
+    <div id="notice"></div>
+  </section>
+  <section class="metrics">
+    <div class="tiles">
+      <div class="stat"><div class="k">Position</div><div class="v" id="sAudio">-</div></div>
+      <div class="stat"><div class="k">First word</div><div class="v" id="sFirst">-</div></div>
+      <div class="stat"><div class="k">Step time (median)</div><div class="v" id="sStep">-</div></div>
+      <div class="stat"><div class="k" id="wordsK">Words</div><div class="v" id="sWords">-</div></div>
+    </div>
+    <div class="box silero">
+      <div class="hd"><span>Silero VAD (start gate)</span></div>
+      <div class="meter"><span id="vadFill" class="fill"></span><span class="mark" title="threshold"></span></div>
+      <b id="vadState">-</b>
+      <span class="g" id="vadGated">-</span>
+    </div>
+    <div class="box"><div class="hd"><span>Board DRAM</span><b id="dramVal">-</b></div><canvas id="dramChart"></canvas></div>
+    <div class="box"><div class="hd"><span title="step time / clock; below 1 = faster than real time">RTF</span><b id="rtfVal">-</b></div><canvas id="rtfChart"></canvas></div>
+    <div class="box eotbox">
+      <div class="hd"><span>End of turn (semantic VAD)</span><b id="eotVal">-</b></div>
+      <div class="meter"><span id="eotFill" class="fill"></span><span id="eotMark" class="mark"></span></div>
+      <canvas id="eotChart"></canvas>
+      <div class="legend" id="eotLegend"></div>
+    </div>
+  </section>
+</main>
+<div id="help" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+ <div class="doc">
+  <button class="close" id="helpClose" aria-label="Close">×</button>
+  <h2 id="helpTitle">Audio8-ASR-Infinite · web demo · user manual</h2>
+  <p class="muted">Everything runs on the board (NPU for the models, CPU for audio front end, VAD and decoding). This page is served by the
+     board; open it from any browser on the same network. Close this window with <kbd>Esc</kbd>, the × button or a click outside.</p>
+
+  <h3>1. Quick start</h3>
+  <ol>
+    <li>Pick a video in the video list (left, under the player).</li>
+    <li>Optionally move the playhead to where you want to begin (the button shows <b>Start at mm:ss</b>).</li>
+    <li>Press <b>Start</b>. The video plays from that point with sound and the transcript appears on the right while it plays.</li>
+    <li>Pause the video to pause the transcription; press play to continue. Press <b>Stop</b> to end the run.</li>
+    <li>Use <b>Copy</b> or <b>Export</b> (top right of the transcript) to take the text.</li>
+  </ol>
+
+  <h3>2. Screen layout</h3>
+  <ul>
+    <li><b>Top left</b> – video player and the controls.</li>
+    <li><b>Top right</b> – live transcript. The newest words appear in light blue and settle to white.</li>
+    <li><b>Bottom bar</b> – live metrics: run statistics, Silero VAD, board DRAM, RTF and end of turn.</li>
+    <li><b>Header</b> – current audio clock and context mode, model load time, run state (Ready / Transcribing / Done / Stopped).</li>
+  </ul>
+
+  <h3>3. Controls</h3>
+  <table>
+    <tr><th>Control</th><th>What it does</th><th>Takes effect</th></tr>
+    <tr><td>Video list</td><td>Selects the video to play (name, duration, "built-in" for the shipped clips). Switching stops a running transcription.</td><td>Immediately</td></tr>
+    <tr><td>Start at mm:ss</td><td>Plays the selected video from the current playhead position (0:00 when it is at the end) and starts a new transcription (clears the transcript and statistics).</td><td>Immediately</td></tr>
+    <tr><td>Stop</td><td>Stops the transcription and pauses the video.</td><td>Immediately</td></tr>
+    <tr><td>Upload video</td><td>Uploads a video from your computer to the board; the progress is shown next to the buttons, then the new video is selected. Any length is accepted. MP4 (H.264 + AAC) plays in every browser; other formats depend on your browser.</td><td>After the upload</td></tr>
+    <tr><td>Delete</td><td>Deletes the selected uploaded video from the board (asks first). Built-in videos cannot be deleted.</td><td>Immediately</td></tr>
+    <tr><td>Player controls</td><td>Pause / play pauses / resumes the transcription. Moving the playhead during a run continues the transcription from the new position (0.3 s after you stop dragging); the transcript is kept and a "— jumped to mm:ss —" line marks the jump. The page itself sends the sound it plays to the board, so keep the player unmuted.</td><td>Immediately</td></tr>
+    <tr><td>Timestamps</td><td>Each paragraph starts with its video time, e.g. [42:10]. Click it to play from there (during a run the transcription continues from that point).</td><td>Immediately</td></tr>
+    <tr><td>Audio clock</td><td>The model emits one text token per audio clock. <b>160 ms</b> (default): less compute per second of audio, more headroom. <b>80 ms</b>: text about 0.1 s sooner, twice the compute. Both use a 480 ms transcription delay. Only the clocks whose model package is installed on the board can be chosen.</td><td>Reloads the models (≈2 s, a loading screen is shown)</td></tr>
+    <tr><td>Language</td><td>The transcription language belongs to the video (EN / ZH in the video list): built-in videos are fixed, for an upload pick "Upload as Chinese / English" before uploading. Selecting a video switches the models to its language automatically.</td><td>On video selection (≈2 s loading screen when the language changes)</td></tr>
+    <tr><td>Silence gate</td><td>On (default): until the first speech of a run, the audio is replaced by silence, so applause or noise before the speaker starts does not produce stray words. After the first speech nothing is changed.</td><td>Immediately</td></tr>
+    <tr><td>Copy / Export / Clear</td><td>Copy the transcript, download it as <i>&lt;video&gt;_transcript.txt</i>, or clear the displayed text (a running transcription continues).</td><td>Immediately</td></tr>
+  </table>
+
+  <h3>4. VAD settings</h3>
+  <table>
+    <tr><th>Setting</th><th>Default</th><th>What it does</th></tr>
+    <tr><td>Silero threshold</td><td>0.5</td><td>Speech probability above which Silero VAD counts a frame as speech (start of the silence gate). Higher = less likely to open on applause, but may open slightly later.</td></tr>
+    <tr><td>Look-ahead (s)</td><td>0.5</td><td>How much audio before the detected speech start is kept, so the first word is not cut. It does not delay text while someone is talking.</td></tr>
+    <tr><td>End-of-turn horizon</td><td>2 s</td><td>Which prediction drives the end-of-turn meter and paragraphs: probability that nobody speaks within the next 0.5 / 1 / 2 / 3 s.</td></tr>
+    <tr><td>End-of-turn threshold</td><td>0.6</td><td>Above this value the speaker is considered finished. Raise it (e.g. 0.7) if paragraphs are too short.</td></tr>
+    <tr><td>Paragraphs</td><td>On</td><td>Starts a new paragraph in the transcript at each end of turn.</td></tr>
+  </table>
+  <p class="muted">Silero threshold and look-ahead apply from the next Start and are shared by everyone using the board. The end-of-turn settings apply
+     immediately and are stored only in your browser.</p>
+
+  <h3>5. Metrics</h3>
+  <table>
+    <tr><th>Metric</th><th>Meaning</th></tr>
+    <tr><td>Position</td><td>Video time the transcription has reached.</td></tr>
+    <tr><td>First word</td><td>Time from Start until the first word appeared.</td></tr>
+    <tr><td>Step time</td><td>Median NPU + CPU time per model step (one step per audio clock: 160 or 80 ms).</td></tr>
+    <tr><td>Words / Characters</td><td>Size of the transcript (characters when transcribing Chinese).</td></tr>
+    <tr><td>Silero VAD</td><td>Speech probability (bar; the yellow mark is the threshold), Speech / Silence, and the state of the gate: "waiting for speech" or "gate open" with the seconds silenced before speech.</td></tr>
+    <tr><td>Board DRAM</td><td>Memory used on the whole board over the last minute. It stays flat during long runs.</td></tr>
+    <tr><td>RTF</td><td>Real-time factor = step time ÷ clock. Below 1 means faster than real time (dashed line = 1.0). Bold line: 8-token average; thin line: every token.</td></tr>
+    <tr><td>End of turn</td><td>The model's own end-of-turn prediction for the four horizons (selected one in bold, threshold dashed); the bar shows the selected horizon.</td></tr>
+  </table>
+
+  <h3>6. Good to know</h3>
+  <ul>
+    <li><b>Unlimited length.</b> The model keeps the last 30 s of context ("rolling 30 s context" in the header), so memory and speed stay constant for any video length.</li>
+    <li><b>Start anywhere.</b> A start or jump begins a fresh session at that point; the first words of a sentence cut by the jump may be missing.</li>
+    <li><b>Long pauses.</b> If the model stays silent although speech has resumed, it is restarted automatically and re-listens to the last seconds (a new paragraph starts there).</li>
+    <li><b>Latency.</b> Words appear about 1 s after they are spoken (the model listens 480 ms ahead by design).</li>
+    <li><b>One run at a time.</b> The board serves one transcription; a Start from any browser replaces the current run. Audio clock, language and gate settings are shared.</li>
+    <li>The first Start may need a click before the browser allows sound.</li>
+  </ul>
+
+  <h3>7. Troubleshooting</h3>
+  <table>
+    <tr><th>Symptom</th><th>What to do</th></tr>
+    <tr><td>"Disconnected" in the header</td><td>The page lost the board connection: check the network and reload the page.</td></tr>
+    <tr><td>No sound</td><td>Check the browser / system volume and the player's volume control; press Start again.</td></tr>
+    <tr><td>Upload failed: no audio track</td><td>The file has no audio; use a video with sound, preferably MP4 (H.264 + AAC).</td></tr>
+    <tr><td>No text while the video plays</td><td>The page sends the sound it plays to the board: keep the player unmuted with some volume.</td></tr>
+    <tr><td>Video does not play after upload</td><td>Your browser cannot decode the format; convert it to MP4 (H.264 + AAC).</td></tr>
+    <tr><td>Model load failed (after an audio clock / language change)</td><td>The previous setting is kept automatically; try again or reload the page.</td></tr>
+    <tr><td>Stray words before the speaker starts</td><td>Make sure Silence gate is on; raise the Silero threshold slightly.</td></tr>
+  </table>
+ </div>
+</div>
+<div id="overlay"><div class="box2"><div class="spin"></div><div id="ovMsg">Loading models…</div><div class="sub">The board is reloading the NPU models, this takes a few seconds.</div></div></div>
+<script src="/pcm-worklet.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const video = $("video"), tr = $("transcript");
+let sid = null, running = false, clockTimer = null, text = "", maxAudio = null, restarting = false;
+let videos = [], lang = "en", clock = null;
+const EOT_COLORS = ["#f47067", "#f0b429", "#4f8cff", "#a371f7"];
+let resetsSeen = 0, needStamp = true, seekTimer = null;
+function fmtT(s) { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = String(s % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${x}` : `${m}:${x}`; }
+let eotHz = [0.5, 1, 2, 3], eotSel = 2, eotPts = [[], [], [], []], eotSeries = 0, paraArmed = false, paraPending = false;
+// the EOT of a step describes audio whose text is still num_delay_tokens tokens away: the break waits for that text
+let paraDue = null, delayTok = 3;
+function lsGet(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+const dramPts = [], rtfPts = [];
+let dramTotal = null, rtfSeries = 0;
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+// series: [{pts: [[x, y]], color, width, alpha}]; window [x0, x0 + span] follows the newest point (o.xmin pins the left
+// edge until the data fills the window); y axis [o.ymin, o.ymax] with the two bounds labelled on the right
+function drawChart(cv, series, o) {
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== w * dpr || cv.height !== h * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+  const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const last = series[0].pts, x1 = last.length ? last[last.length - 1][0] : 0;
+  const x0 = o.xmin != null ? Math.max(o.xmin, x1 - o.span) : x1 - o.span;
+  const top = 6, bot = 6, ymin = o.ymin ?? 0, yr = (o.ymax - ymin) || 1;
+  const X = x => (x - x0) / o.span * (w - 44);
+  const Y = y => top + (1 - (Math.max(ymin, Math.min(o.ymax, y)) - ymin) / yr) * (h - top - bot);
+  g.strokeStyle = css("--line"); g.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) { const y = Math.round(top + i * (h - top - bot) / 4) + .5; g.beginPath(); g.moveTo(0, y); g.lineTo(w - 44, y); g.stroke(); }
+  if (o.ref != null) {
+    g.setLineDash([4, 4]); g.strokeStyle = css("--warn"); const y = Math.round(Y(o.ref)) + .5;
+    g.beginPath(); g.moveTo(0, y); g.lineTo(w - 44, y); g.stroke(); g.setLineDash([]);
+    g.fillStyle = css("--warn"); g.font = "11px system-ui"; g.fillText(o.refLabel, 4, y - 4);
+  }
+  for (const s of series) {
+    const vis = s.pts.filter(p => p[0] >= x0);
+    if (vis.length < 2) continue;
+    g.globalAlpha = s.alpha ?? 1; g.strokeStyle = s.color; g.lineWidth = s.width ?? 1.8; g.lineJoin = "round"; g.beginPath();
+    vis.forEach((p, i) => i ? g.lineTo(X(p[0]), Y(p[1])) : g.moveTo(X(p[0]), Y(p[1]))); g.stroke(); g.globalAlpha = 1;
+  }
+  g.fillStyle = css("--muted"); g.font = "11px system-ui"; g.textAlign = "right";
+  g.fillText(o.fmt(o.ymax), w - 2, top + 4); g.fillText(o.fmt(ymin), w - 2, h - bot + 2); g.textAlign = "left";
+}
+function redrawDram() {
+  if (!dramTotal) return;
+  // y axis zoomed to the recent range (at least 0.5 GB tall) so small changes stay visible
+  const vis = dramPts.filter(p => p[0] >= (dramPts.length ? dramPts[dramPts.length - 1][0] : 0) - 60).map(p => p[1]);
+  const lo = Math.min(...vis), hi = Math.max(...vis), mid = (lo + hi) / 2, half = Math.max(256, (hi - lo) / 2 * 1.3);
+  drawChart($("dramChart"), [{ pts: dramPts, color: css("--accent"), width: 2 }],
+            { span: 60, ymin: Math.max(0, mid - half), ymax: Math.min(dramTotal, mid + half), fmt: v => (v / 1024).toFixed(2) + " GB" });
+}
+function redrawRtf() {
+  // thin faint line = every token; bold line = moving average over the last 8 tokens (~1.3 s)
+  const sm = rtfPts.map((p, i) => { const a = rtfPts.slice(Math.max(0, i - 7), i + 1); return [p[0], a.reduce((s, q) => s + q[1], 0) / a.length]; });
+  drawChart($("rtfChart"), [{ pts: sm, color: css("--ok"), width: 2.2 }, { pts: rtfPts, color: css("--ok"), width: 1, alpha: .35 }],
+            { span: 60, xmin: 0, ymin: 0, ymax: 1.2, ref: 1, refLabel: "real time 1.0", fmt: v => v.toFixed(1) });
+}
+function trimPts(a) { while (a.length > 2 && a[0][0] < a[a.length - 1][0] - 90) a.shift(); }   // charts show 60 s
+function eotThr() { return parseFloat($("eTh").value) || 0.6; }
+function redrawEot() {
+  const series = eotPts.map((pts, h) => ({ pts, color: EOT_COLORS[h], width: h === eotSel ? 2.4 : 1.2, alpha: h === eotSel ? 1 : .55 }));
+  series.unshift(series.splice(eotSel, 1)[0]);
+  drawChart($("eotChart"), series, { span: 60, xmin: 0, ymin: 0, ymax: 1, ref: eotThr(), refLabel: "threshold " + eotThr().toFixed(2), fmt: v => v.toFixed(1) });
+  $("eotMark").style.left = (100 * eotThr()) + "%";
+}
+function onEot(ev) {
+  if (!ev.eot || ev.tokens <= eotSeries) return;
+  eotSeries = ev.tokens;
+  ev.eot.forEach((v, h) => { eotPts[h].push([ev.audio_s, v]); trimPts(eotPts[h]); });
+  const v = ev.eot[eotSel], on = v >= eotThr();
+  $("eotVal").textContent = `${on ? "END OF TURN" : "speaking"} · ${v.toFixed(2)} (${eotHz[eotSel]} s)`;
+  $("eotFill").style.width = (100 * v).toFixed(0) + "%"; $("eotFill").className = "fill" + (on ? " on" : "");
+  if ($("ePara").checked) {                       // one paragraph break per end-of-turn episode, before the first text after the delay
+    if (on && paraArmed) { paraDue = ev.tokens + delayTok; paraArmed = false; }
+    if (!on && text.trim()) paraArmed = true;
+  }
+  redrawEot();
+}
+function sendVadParams() {
+  post("/api/vad", { threshold: parseFloat($("vTh").value), preroll_s: parseFloat($("vPre").value) });
+}
+function copyText() {
+  const t = text.trim(); if (!t) return;
+  const ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select();
+  let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+  ta.remove(); $("copyBtn").textContent = ok ? "Copied" : "Copy failed"; setTimeout(() => $("copyBtn").textContent = "Copy", 1200);
+}
+function downloadText() {
+  const t = text.trim(); if (!t) return;
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([t + "\n"], { type: "text/plain" }));
+  a.download = ($("videoSel").value || "transcript").split("/").pop().replace(/\.[^.]+$/, "") + "_transcript.txt"; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function setState(s, label) {
+  const el = $("state"); el.className = "chip " + s; el.textContent = label;
+}
+function resetTranscript(keepText) {
+  if (!keepText) { text = ""; tr.innerHTML = '<span class="cursor"></span>'; }
+  needStamp = true;
+  $("notice").style.display = "none";
+  ["sAudio", "sFirst", "sStep", "sWords", "vadState", "vadGated"].forEach(k => $(k).textContent = "-");
+  $("vadFill").style.width = "0";
+  resetsSeen = 0; eotPts = [[], [], [], []]; eotSeries = 0; paraArmed = false; paraPending = false; paraDue = null; $("eotVal").textContent = "-";
+  $("eotFill").style.width = "0"; redrawEot();
+  rtfPts.length = 0; rtfSeries = 0; $("rtfVal").textContent = "-"; redrawRtf();
+}
+function addSpan(t, cls) { const e = document.createElement("span"); e.className = cls; e.textContent = t; tr.insertBefore(e, tr.lastElementChild); return e; }
+function addStamp(t) {                              // clickable [mm:ss] at a paragraph start: jumps the video there
+  const e = addSpan(`[${fmtT(t)}]`, "stamp"); e.dataset.t = t; e.title = "Play from here";
+  text += `[${fmtT(t)}] `;
+}
+function appendPiece(p, tFirst) {
+  if (!p) return;
+  let head = "";
+  if (paraPending && text.trim()) {
+    // closing punctuation that arrives after the end of turn stays with the previous paragraph
+    const m = p.match(/^[\s.,!?;:)\]"'”’。，！？；：、）》」』]+/);
+    const lead = m ? m[0] : "", rest = p.slice(lead.length);
+    if (!rest.trim()) { head = lead; p = ""; }      // only punctuation: keep waiting for real text
+    else { head = lead.replace(/\s+$/, "") + "\n\n"; p = rest.replace(/^\s+/, ""); paraPending = false; needStamp = true; }
+  }
+  if (head) { text += head; addSpan(head, "fresh"); }
+  if (p) {
+    if (needStamp && p.trim() && tFirst != null) { addStamp(tFirst); p = p.replace(/^\s+/, ""); needStamp = false; }
+    text += p; addSpan(p, "fresh");
+  }
+  tr.scrollTop = tr.scrollHeight;
+}
+function insertSeparator(t) {                       // the playhead was moved during a run: keep the text, mark the jump
+  if (text.trim()) { const sep = `\n— jumped to ${fmtT(t)} —\n`; text += sep; addSpan(`— jumped to ${fmtT(t)} —`, "sep"); }
+  paraPending = false; paraDue = null; needStamp = true;
+}
+async function post(url, body, signal) {
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}), signal });
+  return r.json();
+}
+// Audio capture: the page decodes the video's sound itself (Web Audio), it is resampled to 16 kHz PCM16 and every 100 ms
+// chunk is POSTed to the board, in order. The resampler is Pcm16Resampler of static/pcm-worklet.js. AudioWorklet only
+// exists in secure contexts (https / localhost); on the board's plain http address the same resampler runs in a
+// ScriptProcessorNode instead.
+let audioCtx = null, pcmNode = null, audioEpoch = 0, sendChain = Promise.resolve(), pcmReset = null;
+function onPcm(epoch, buf) {
+  if (epoch !== audioEpoch || !running || sid === null || video.paused || video.seeking) return;
+  const s = sid;
+  sendChain = sendChain.then(() => fetch(`/api/audio?sid=${s}`,
+    { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: buf })).catch(() => {});
+}
+async function ensureAudio() {
+  if (audioCtx) { if (audioCtx.state !== "running") await audioCtx.resume(); return; }
+  audioCtx = new AudioContext();
+  await audioCtx.resume();
+  const src = audioCtx.createMediaElementSource(video);
+  src.connect(audioCtx.destination);              // the video stays audible
+  if (audioCtx.audioWorklet) {
+    await audioCtx.audioWorklet.addModule("/pcm-worklet.js");
+    pcmNode = new AudioWorkletNode(audioCtx, "pcm16-worklet",
+      { processorOptions: { targetSampleRate: 16000, sourceSampleRate: audioCtx.sampleRate, chunkSamples: 1600 } });
+    pcmNode.port.onmessage = e => onPcm(e.data.epoch, e.data.buffer);
+    pcmReset = ep => pcmNode.port.postMessage({ epoch: ep });
+  } else {
+    let epoch = audioEpoch;
+    const rs = new Pcm16Resampler(audioCtx.sampleRate, 16000, 1600, buf => onPcm(epoch, buf));
+    pcmNode = audioCtx.createScriptProcessor(4096, 2, 1);
+    pcmNode.onaudioprocess = e => {
+      const chs = []; for (let c = 0; c < e.inputBuffer.numberOfChannels; c += 1) chs.push(e.inputBuffer.getChannelData(c));
+      rs.push(chs);
+    };
+    pcmReset = ep => { epoch = ep; rs.reset(); };
+  }
+  src.connect(pcmNode); pcmNode.connect(audioCtx.destination);   // the capture node outputs silence
+}
+function newAudioEpoch() {                        // drop audio captured before a start / seek
+  audioEpoch += 1;
+  if (pcmReset) pcmReset(audioEpoch);
+}
+function sendEnd() {
+  const s = sid;
+  if (s !== null) sendChain = sendChain.then(() => post("/api/end", { sid: s })).catch(() => {});
+}
+function countUnits(t) {          // words for English, characters (CJK, letters, digits) for Chinese
+  t = t.trim(); if (!t) return 0;
+  return lang === "zh" ? (t.match(/[\p{L}\p{N}]/gu) || []).length : t.split(/\s+/).length;
+}
+function fmtDur(s) { if (s == null) return ""; s = Math.round(s); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+function curVideo() { return videos.find(v => v.id === $("videoSel").value); }
+function updateVideoUi() {
+  const v = curVideo();
+  $("delBtn").disabled = !v || v.builtin;
+  const h = $("longHint");
+  if (v && maxAudio && v.duration_s > maxAudio + 0.5) { h.textContent = `Only the first ${maxAudio} s of this video is transcribed.`; h.style.display = "inline"; }
+  else h.style.display = "none";
+}
+async function loadVideos(select) {
+  const d = await (await fetch("/api/videos")).json();
+  videos = d.videos;
+  $("videoSel").innerHTML = videos.map(v => `<option value="${v.id}">${v.name}${v.duration_s ? " (" + fmtDur(v.duration_s) + ")" : ""} · ${v.lang === "en" ? "EN" : "ZH"}${v.builtin ? " · built-in" : ""}</option>`).join("");
+  const keep = select || (videos.find(v => v.id === video.dataset.id) || {}).id || (videos[0] || {}).id;
+  if (keep) { $("videoSel").value = keep; setVideo(keep); }
+  updateVideoUi(); ensureLang();
+}
+function setVideo(id) {
+  if (video.dataset.id === id) return;
+  video.dataset.id = id; video.src = "/media/" + encodeURI(id);
+}
+function upMsg(t, err) { const m = $("upMsg"); m.textContent = t; m.className = err ? "err" : ""; }
+function upload(file) {
+  if (running) stop();
+  const xhr = new XMLHttpRequest();
+  xhr.open("PUT", "/api/upload?name=" + encodeURIComponent(file.name) + "&lang=" + $("upLang").value);
+  xhr.upload.onprogress = e => { if (e.lengthComputable) upMsg(`Uploading ${Math.round(100 * e.loaded / e.total)}%`); };
+  xhr.upload.onload = () => upMsg("Checking the audio track…");
+  xhr.onload = async () => {
+    let r = {}; try { r = JSON.parse(xhr.responseText); } catch (e) {}
+    if (xhr.status !== 200) { upMsg("Upload failed: " + (r.error || xhr.status), true); return; }
+    await loadVideos(r.id); upMsg(`Uploaded ${r.id.split("/").pop()}`); setTimeout(() => upMsg(""), 4000);
+  };
+  xhr.onerror = () => upMsg("Upload failed (network)", true);
+  upMsg("Uploading 0%"); xhr.send(file);
+}
+async function delVideo() {
+  const v = curVideo(); if (!v || v.builtin) return;
+  if (!confirm(`Delete ${v.name} from the board?`)) return;
+  if (running) await stop();
+  const r = await post("/api/delete", { video: v.id });
+  if (r.error) { upMsg(r.error, true); return; }
+  video.dataset.id = ""; await loadVideos();
+}
+function showOverlay(on, msg) { $("overlay").classList.toggle("on", on); if (msg) $("ovMsg").textContent = msg; }
+let switching = false, switchTimer = null, switchEpoch = 0;
+const SWITCH_TIMEOUT_MS = 60000, SWITCH_POLL_MS = 500;
+function finishSwitch(error) {
+  clearTimeout(switchTimer); switchTimer = null;
+  switching = false; ++switchEpoch; showOverlay(false);
+  if (error) { upMsg(error, true); $("clockSel").value = clock; }
+}
+function beginSwitch(c, l) {
+  switching = true;
+  showOverlay(true, `Loading the ${c || ""} ms clock · ${l === "zh" ? "Chinese" : "English"}…`);
+  return ++switchEpoch;
+}
+async function pollSwitch(epoch, deadline) {
+  if (!switching || epoch !== switchEpoch) return;
+  if (Date.now() >= deadline) {
+    finishSwitch("Could not confirm model reload. Check the connection and retry.");
+    return;
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), Math.min(5000, deadline - Date.now()));
+  try {
+    const response = await fetch("/api/videos", { cache: "no-store", signal: controller.signal });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const info = await response.json();
+    if (!switching || epoch !== switchEpoch) return;
+    if (info.clock_ms && info.state !== "reload") {
+      handleEvent(info);                      // the current server state also recovers a missed SSE completion
+      return;
+    }
+  } catch (_) {                              // a brief disconnect is retried within the bounded deadline
+  } finally { clearTimeout(timer); }
+  if (switching && epoch === switchEpoch)
+    switchTimer = setTimeout(() => pollSwitch(epoch, deadline), SWITCH_POLL_MS);
+}
+function watchSwitch(epoch) { pollSwitch(epoch, Date.now() + SWITCH_TIMEOUT_MS); }
+async function configureTo(c, l) {
+  c = String(c);
+  if (switching || (c === clock && l === lang)) return;
+  const epoch = beginSwitch(c, l), controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SWITCH_TIMEOUT_MS);
+  try {
+    if (running) await stop(controller.signal);
+    const r = await post("/api/config", { clock_ms: c, lang: l }, controller.signal);
+    if (epoch !== switchEpoch) return;
+    if (r.error) throw new Error(r.error);
+    watchSwitch(epoch);
+  } catch (error) {
+    if (epoch === switchEpoch)
+      finishSwitch("Could not change model configuration: " + (error.message || String(error)));
+  } finally { clearTimeout(timer); }
+}
+function ensureLang() {                            // the transcription language follows the selected video
+  const v = curVideo();
+  if (v && clock && v.lang !== lang) configureTo(clock, v.lang);
+}
+function startPos() { return (video.ended || !isFinite(video.duration) || video.duration - video.currentTime < 1) ? 0 : video.currentTime; }
+function updateStartLabel() { $("startBtn").textContent = `Start at ${fmtT(startPos())}`; }
+function hotwordOptions() {
+  const words = $("hotwordEnabled").checked ? $("hotwordWords").value.split(/[,，\n]/).map(s => s.trim()).filter(Boolean) : [];
+  return {words, top_k: Number($("hotwordTopK").value), start_boost: Number($("hotwordStart").value),
+          continuation_boost: Number($("hotwordContinuation").value)};
+}
+async function start() {
+  restarting = true;
+  const off = startPos();
+  video.pause(); if (off === 0) video.currentTime = 0;
+  resetTranscript(false);
+  const r = await post("/api/start", { video: $("videoSel").value, offset_s: off, hotwords: hotwordOptions() });
+  if (r.error) { upMsg(r.error, true); restarting = false; return; }
+  sid = r.sid; running = true;
+  await ensureAudio();
+  newAudioEpoch();
+  await video.play();
+  restarting = false;
+}
+async function stop(signal) {
+  running = false; clearInterval(clockTimer); sid = null;
+  video.pause();
+  await post("/api/stop", {}, signal);
+}
+video.addEventListener("ended", () => { if (running) sendEnd(); });
+async function jump() {                            // playhead moved during a run: continue from there (fresh session)
+  if (!running) return;
+  const r = await post("/api/start", { video: $("videoSel").value, offset_s: video.currentTime, jump: true, hotwords: hotwordOptions() });
+  if (r.error) { upMsg(r.error, true); return; }
+  sid = r.sid;
+  newAudioEpoch();
+  if (video.paused) video.play();
+}
+video.addEventListener("seeked", () => {           // debounce: scrubbing back and forth restarts once, 0.3 s after the last move
+  updateStartLabel();
+  if (!running || restarting) return;
+  clearTimeout(seekTimer); seekTimer = setTimeout(jump, 300);
+});
+["timeupdate", "loadedmetadata", "pause"].forEach(e => video.addEventListener(e, updateStartLabel));
+tr.addEventListener("click", e => { const t = e.target.dataset && e.target.dataset.t; if (t != null) video.currentTime = parseFloat(t); });
+$("startBtn").onclick = start;
+$("copyBtn").onclick = copyText;
+$("dlBtn").onclick = downloadText;
+$("clearBtn").onclick = () => { text = ""; tr.innerHTML = '<span class="cursor"></span>'; needStamp = true; };
+window.addEventListener("resize", () => { redrawDram(); redrawRtf(); redrawEot(); });
+$("stopBtn").onclick = () => stop();
+$("videoSel").onchange = () => { if (running) stop(); setVideo($("videoSel").value); updateVideoUi(); ensureLang(); };
+$("upBtn").onclick = () => $("upFile").click();
+$("upFile").onchange = () => { const f = $("upFile").files[0]; $("upFile").value = ""; if (f) upload(f); };
+$("delBtn").onclick = delVideo;
+$("clockSel").onchange = () => configureTo($("clockSel").value, lang);
+$("vadChk").onchange = () => post("/api/vad", { enabled: $("vadChk").checked });
+["vTh", "vPre"].forEach(id => $(id).onchange = sendVadParams);
+$("eHz").onchange = () => { eotSel = +$("eHz").value; lsSet("demo.eotSel", eotSel); redrawEot(); };
+$("eTh").onchange = () => { lsSet("demo.eotThr", $("eTh").value); redrawEot(); };
+$("ePara").onchange = () => lsSet("demo.para", $("ePara").checked ? "1" : "0");
+eotSel = +lsGet("demo.eotSel", "2"); $("eTh").value = lsGet("demo.eotThr", "0.6"); $("ePara").checked = lsGet("demo.para", "1") === "1";
+
+
+const es = new EventSource("/api/events");
+function handleEvent(ev) {
+  if (ev.type === "info") {
+    if (!ev.clock_ms || ev.state === "reload") return;
+    const initialInfo = !clock;
+    maxAudio = ev.max_audio_s; clock = String(ev.clock_ms); lang = ev.lang; finishSwitch();
+    delayTok = Math.max(0, Math.round(ev.delay_ms / ev.clock_ms));   // 160 ms: 3, 80 ms: 6
+    if (ev.clocks) for (const o of $("clockSel").options) {         // only the installed clocks can be chosen
+      o.disabled = !ev.clocks.includes(o.value);
+      o.title = o.disabled ? (ev.clock_errors && ev.clock_errors[o.value] || "model package unavailable") : "";
+    }
+    $("clockSel").value = clock;
+    if (initialInfo) setTimeout(ensureLang, 0);
+    $("wordsK").textContent = lang === "zh" ? "Characters" : "Words";
+    $("vadChk").checked = ev.vad !== false;
+    if (ev.vad_params) { $("vTh").value = ev.vad_params.threshold; $("vPre").value = ev.vad_params.preroll_s; }
+    if (ev.eot_horizons_s) {
+      eotHz = ev.eot_horizons_s;
+      $("eHz").innerHTML = eotHz.map((h, i) => `<option value="${i}">${h} s</option>`).join(""); $("eHz").value = eotSel;
+      $("eotLegend").innerHTML = eotHz.map((h, i) => `<span><i style="background:${EOT_COLORS[i]}"></i>${h} s</span>`).join("");
+      redrawEot();
+    }
+    updateVideoUi();
+    $("cfg").textContent = `${ev.lang.toUpperCase()} · ${ev.clock_ms} ms clock · ${ev.delay_ms} ms delay`;
+    $("foot").textContent = ev.roll_s ? `${ev.clock_ms} ms clock · unlimited length (rolling ${ev.roll_s} s context) · model load ${ev.init_s} s`
+                                      : `${ev.clock_ms} ms clock · up to ${ev.max_audio_s} s of audio per run · model load ${ev.init_s} s`;
+    setState(ev.state === "running" ? "running" : "", ev.state === "running" ? "Transcribing" : "Ready");
+  } else if (ev.type === "reset") {
+    if (ev.jump) { insertSeparator(ev.offset_s); resetTranscript(true); } else resetTranscript(false);
+  } else if (ev.type === "text") {
+    if (ev.resets > resetsSeen) { resetsSeen = ev.resets; if (text.trim()) paraPending = true; }   // soft reset = after a long gap: new paragraph
+    if (paraDue !== null && ev.tokens >= paraDue) { paraDue = null; if (text.trim()) paraPending = true; }
+    appendPiece(ev.piece, ev.t_first);
+    $("sAudio").textContent = fmtT(ev.audio_s);
+    $("sStep").textContent = ev.step_ms_median.toFixed(0) + " ms";
+    if (ev.first_char_s !== null) $("sFirst").textContent = ev.first_char_s.toFixed(2) + " s";
+    $("sWords").textContent = countUnits(text);
+    onEot(ev);
+    if (ev.speech_prob != null) {
+      $("vadFill").style.width = (100 * ev.speech_prob).toFixed(0) + "%";
+      $("vadFill").className = "fill" + (ev.speech ? " speech" : "");
+      $("vadState").textContent = `${ev.speech ? "Speech" : "Silence"} ${ev.speech_prob.toFixed(2)}`;
+      $("vadGated").textContent = !ev.enabled ? "gate off" : ev.opened ? `gate open · ${ev.gated_s.toFixed(1)} s silenced before speech`
+                                                                         : `waiting for speech · ${ev.gated_s.toFixed(1)} s silenced`;
+    }
+    if (ev.tokens > rtfSeries) {
+      rtfSeries = ev.tokens; rtfPts.push([ev.audio_s, ev.rtf]); trimPts(rtfPts);
+      $("rtfVal").textContent = `${ev.rtf_median.toFixed(2)} · ${(1 / ev.rtf_median).toFixed(1)}x faster than real time`;
+      redrawRtf();
+    }
+  } else if (ev.type === "vad") {
+    $("vadChk").checked = ev.enabled;
+    if (ev.params) { $("vTh").value = ev.params.threshold; $("vPre").value = ev.params.preroll_s; }
+  } else if (ev.type === "loading") {
+    if (ev.on) {
+      running = false; clearInterval(clockTimer); video.pause();
+      if (!switching) watchSwitch(beginSwitch(ev.clock_ms, ev.lang));
+    } else finishSwitch(ev.error ? "Model load failed: " + ev.error : null);
+  } else if (ev.type === "sys_hist") {
+    dramPts.length = 0; ev.pts.forEach(p => dramPts.push(p)); dramTotal = ev.dram_total_mb; redrawDram();
+  } else if (ev.type === "sys") {
+    dramTotal = ev.dram_total_mb; dramPts.push([ev.t, ev.dram_used_mb]);
+    while (dramPts.length && dramPts[0][0] < ev.t - 120) dramPts.shift();
+    $("dramVal").textContent = `${(ev.dram_used_mb / 1024).toFixed(1)} / ${(ev.dram_total_mb / 1024).toFixed(1)} GB · ${Math.round(100 * ev.dram_used_mb / ev.dram_total_mb)}%`;
+    redrawDram();
+  } else if (ev.type === "state") {
+    if (ev.state === "running") setState("running", "Transcribing");
+    else if (ev.state === "done") {
+      setState("done", "Done");
+      running = false; clearInterval(clockTimer);
+      if (ev.reason === "limit") {
+        const n = $("notice"); n.style.display = "block";
+        n.textContent = `Reached the per-run limit (about ${maxAudio} s of audio); the rest is not transcribed. The video can keep playing.`;
+      }
+    } else { setState("", "Stopped"); if (ev.error) finishSwitch("Engine error: " + ev.error); }
+  }
+}
+es.onmessage = m => handleEvent(JSON.parse(m.data));
+es.onerror = () => {
+  setState("", "Disconnected");
+
+};
+
+loadVideos();
+function showHelp(on) { $("help").classList.toggle("on", on); }
+$("helpBtn").onclick = () => showHelp(true);
+$("helpClose").onclick = () => showHelp(false);
+$("help").addEventListener("click", e => { if (e.target.id === "help") showHelp(false); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") showHelp(false); });
+</script>
+</body>
+</html>

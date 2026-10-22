@@ -1,0 +1,30 @@
+Pandora licensing / Pandora 许可说明
+====================================
+
+This distribution contains separately licensed components. Scope is determined by
+this notice and the license accompanying each component, not by file format alone.
+本发行包包含不同许可的组件，适用范围以本说明及各组件随附许可为准。
+
+1. APLUX-authored Demo frontends, application/business logic, examples, C API headers,
+   Python interface bindings and their documentation: Apache License 2.0.
+   阿加犀编写的 Demo 前端、业务层、示例、C 接口头文件、Python 接口绑定及其文档：Apache-2.0。
+   Full text / 完整条款: LICENSES/Apache-2.0.txt
+
+2. APLUX proprietary contributions in the SDK binaries listed in LICENSING.md,
+   and APLUX proprietary model adaptations expressly supplied under this agreement:
+   Pandora Model and SDK License Agreement v1.0.
+   LICENSING.md 列明的 SDK 二进制库中的阿加犀专有部分，以及明确按本协议提供的
+   阿加犀专有模型适配部分：Pandora 模型与 SDK 使用许可协议 v1.0。
+   Full texts / 完整条款:
+     LICENSES/Pandora-Model-SDK.zh-CN.txt (Chinese; prevails in case of differences)
+     LICENSES/Pandora-Model-SDK.en.txt (English)
+
+3. Third-party software, upstream models, data, runtime components and media keep
+   their respective licenses, notices and attribution requirements. APLUX claims no
+   exclusive ownership of those materials and does not replace their licenses.
+   第三方软件、上游模型、数据、运行库及素材继续适用各自条款，阿加犀不主张其专有权利，
+   不以自有协议替代其许可。See / 参见 NOTICE, THIRD_PARTY_NOTICES.txt and LICENSING.md.
+
+The proprietary terms apply prospectively to APLUX rights in this release and do not
+retroactively revoke rights lawfully obtained under Apache-2.0 or other licenses.
+专有条款仅在阿加犀有权许可的范围内适用于本次发布，不追溯撤销此前合法取得的许可权利。

@@ -1,0 +1,29 @@
+Audio8-ASR-Infinite SDK: third-party notices
+==========================================
+
+sdk/lib/libaudio8_asr.so includes nlohmann/json 3.12.0
+  Copyright (c) 2013-2025 Niels Lohmann <https://nlohmann.me>
+  License: MIT
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+  documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+  persons to whom the Software is furnished to do so, subject to the following conditions:
+  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+  Software.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+  WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+  COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+The separately downloaded Silero VAD v5 model is used by the demo, not embedded in this SDK library.
+Copyright (c) 2020-present Silero Team
+License: MIT; see LICENSES/Silero-VAD-MIT.txt.
+https://github.com/snakers4/silero-vad
+
+AidLux AidLite and Qualcomm QNN / QAIRT are separately installed runtime dependencies and are not distributed here.
+Their own license terms apply. Separately downloaded recognition models retain their own terms and notices.
+
+ICU is a separately installed system dependency used for Unicode normalization and regular expressions.
+ICU is not bundled in this SDK archive; its Unicode license and system-package notices apply.
+The tested Ubuntu 22.04 build requires libicu70.

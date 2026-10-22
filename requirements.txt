@@ -1,0 +1,6 @@
+# Python packages for the Python binding, the examples and the web demo (python3 >= 3.8).
+# Tested on the board with python 3.10: numpy 1.26.4, soundfile 0.13.1, scipy 1.15.3, onnxruntime 1.23.2.
+numpy>=1.22
+soundfile>=0.12      # reading audio files (examples)
+scipy>=1.8           # resampling audio files that are not 16 kHz (examples)
+onnxruntime>=1.16    # Silero VAD silence gate (web demo, examples/python/stream_file.py)

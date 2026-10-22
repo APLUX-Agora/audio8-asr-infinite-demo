@@ -1,0 +1,10 @@
+.venv/
+.hf-tools/
+build/
+__pycache__/
+*.pyc
+*.log
+# model files are not committed, only the README
+models/*
+!models/README.md
+demo/media/uploads/

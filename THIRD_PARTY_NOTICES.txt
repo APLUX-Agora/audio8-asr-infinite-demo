@@ -1,0 +1,54 @@
+Audio8-ASR-Infinite
+==================
+
+This repository contains an on-device speech recognition package for Qualcomm NPUs: a prebuilt inference library
+(sdk/lib/libaudio8_asr.so) with its C header and Python binding, Python examples and a web demo.
+APLUX application/business code is under Apache-2.0; proprietary SDK binaries are separately licensed.
+See LICENSING.md and LICENSES/Apache-2.0.txt.
+
+Model files
+-----------
+The model files (quantized QNN context binaries and host-side tensors) are not distributed in this repository; they
+are downloaded separately (see models/README.md) and come with their own license terms.
+
+Third-party components
+----------------------
+sdk/lib/libaudio8_asr.so includes nlohmann/json 3.12.0
+  Copyright (c) 2013-2025 Niels Lohmann <https://nlohmann.me>
+  License: MIT
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+  documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+  persons to whom the Software is furnished to do so, subject to the following conditions:
+  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+  Software.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+  WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+  COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Silero VAD v5 (models/silero_vad.onnx, part of the model package, used by the demo's silence gate)
+  https://github.com/snakers4/silero-vad
+  License: MIT
+
+Runtime (not distributed)
+-------------------------
+The library links against the AidLux aidlite SDK and Qualcomm QNN / QAIRT runtime libraries installed on the board.
+They are not part of this repository and are covered by their own licenses.
+
+Demo media
+----------
+demo/media/ holds 10-minute excerpts of recordings of public product launches (a Steve Jobs keynote, the Xiaomi 18 Pro
+launch, the Smartisan OS 2013 launch) and examples/audio/ their 16 kHz audio tracks. They are included only to
+demonstrate the speech recognition; all rights remain with their owners.
+
+Model licensing boundaries
+--------------------------
+Separately downloaded model weights, tensors and third-party components retain their applicable licenses.
+The Pandora agreement covers only proprietary contributions that APLUX has the right to license; it does not
+replace upstream terms or remove existing rights. Consult the licenses and notices accompanying the model download.
+
+ICU is a separately installed system dependency used for Unicode normalization and regular expressions.
+ICU is not bundled in this SDK archive; its Unicode license and system-package notices apply.
+The tested Ubuntu 22.04 build requires libicu70.

@@ -1,0 +1,157 @@
+# demo
+
+Board web demo: the browser plays a video and sends its sound to the board, the board transcribes it with the SDK
+engine, and the text comes back to the page over Server-Sent Events. The Help button on the page is the user manual.
+
+How the audio gets to the model: the page decodes the video's sound
+with Web Audio, resamples it to 16 kHz mono PCM16 (`static/pcm-worklet.js`; on a plain `http://` address, where browsers
+do not offer AudioWorklet, the same resampler runs in a ScriptProcessorNode) and POSTs it in 100 ms chunks to
+`/api/audio`. Pausing the video pauses the transcription; seeking starts a fresh session at the new position. Keep the
+player unmuted: the page sends the sound it plays.
+
+## Start
+
+The SDK library comes prebuilt in `sdk/lib/` ([../sdk/README.md](../sdk/README.md)). Download the model package of
+your board's chip into `models/` ([../models/README.md](../models/README.md)); `$SOC` below is its folder, e.g.
+`qnn248_<chip>`.
+
+```bash
+demo/run.sh --port 8765                                           # foreground
+setsid -f demo/run.sh --port 8765 > demo.log 2>&1 < /dev/null     # background
+```
+
+Create this demo's `.venv` and install requirements as shown in the main README. The launcher selects
+`.venv/bin/python` explicitly; it does not depend on shell activation or fall back to global Python.
+With one chip package under `models/`, no path option is needed. A flat package at `models/manifest.json` also works.
+For multiple packages, pass `--models models/$SOC` (the directory directly containing the manifest). CLI `--models`
+overrides `A8_MODELS`; explicit relative paths use the caller's working directory. Automatic discovery uses this
+checkout's `models/` even when the launcher is invoked from another directory.
+
+Open `http://<board-ip>:8765/`.
+
+| Environment variable | Default | Meaning |
+|---|---|---|
+| `A8_CLOCK_MS` | the installed one (160 first) | audio clock at start-up: 160 or 80 ms; the page offers the installed clocks only |
+| `A8_LANG` | en | transcription language at start-up (en / zh); the page switches it when a video is selected |
+| `A8_MODELS` | automatic discovery | explicit package root; must directly contain manifest.json; overridden by `--models` |
+| `AUDIO8_ASR_LIB` | `libaudio8_asr.so` in `sdk/lib/` or `sdk/build/` | the .so to load |
+| `A8_RECOVER` | reset | soft-reset policy; `off` disables it |
+| `A8_RESET_AFTER_S` / `A8_RESET_QUIET_S` / `A8_RESET_BACKOFF_S` | 2 / 2 / 10 | soft-reset trigger parameters (`reset_policy.py`) |
+
+Requirements: the setup in the [main README](../README.md#setup) (AidLite runtime, ffmpeg for ffprobe, the Python
+packages of `requirements.txt`). In the browser: a current Chrome, Edge or Firefox.
+
+## Model package checks
+
+At startup, the application verifies the manifest, required model files and their `SHA256SUMS` entries for each
+160/80 ms clock, including shared files and the silence-gate model. This initial integrity scan can take additional
+time before the server starts listening. Only complete, verified clocks are offered in the page.
+
+Before a configuration change, the target package is checked again, before the current engine is released.
+Missing, empty or checksum-mismatched files produce a clear error and leave the loaded configuration intact.
+Payload hashes are checked again on configuration changes; filesystem timestamps alone are not trusted to detect
+same-size edits. This adds package-check time before reloading, not to per-step inference. Restart the server after replacing a download to refresh the initial clock list.
+Checksums detect download corruption; obtain the model package and checksum list from the trusted documented
+revision. This check does not authenticate an attacker-supplied replacement checksum list.
+
+If loading notifications are interrupted, the page checks the current server state to recover. Requests and state
+confirmation have time limits, so a failed connection produces an error instead of an indefinite loading overlay.
+
+## Using the page
+
+1. Pick a video in the list under the player.
+2. Optionally move the playhead to where you want to begin (the button then reads **Start at mm:ss**).
+3. Press **Start**. The video plays with sound and the transcript appears on the right while it plays.
+4. Pause the video to pause the transcription; play to continue. **Stop** ends the run.
+5. Take the text with **Copy** or **Export**.
+
+The **Help** button in the page header opens the same manual on the page.
+
+### Controls
+
+| Control | What it does |
+|---|---|
+| Video list | Selects the video (name, duration, language, "built-in" for the shipped clips). Switching stops a running transcription. |
+| Start / Start at mm:ss | Plays the selected video from the playhead and starts a new transcription (clears the transcript and the statistics). |
+| Stop | Stops the transcription and pauses the video. |
+| Upload as Chinese / English | The language spoken in the video you are about to upload. Choose it before uploading. |
+| Upload video | Uploads a video from your computer to the board; it is selected when the upload is done. Any length is accepted. MP4 (H.264 + AAC) plays in every browser. |
+| Delete | Deletes the selected uploaded video. Built-in videos cannot be deleted. |
+| Player | Pause / play pauses / resumes the transcription. Moving the playhead during a run continues the transcription from the new position; the transcript is kept and a "jumped to mm:ss" line marks the jump. |
+| Timestamps | Each paragraph starts with its video time, e.g. `[42:10]`. Click it to play from there. |
+| Audio clock | The model emits one text token per audio clock: **160 ms** (default, less compute, more headroom) or **80 ms** (text about 0.1 s sooner, twice the compute). Only installed clocks can be chosen. Changing it reloads the models (about 2 s). |
+| Silence gate | On by default: until the first speech of a run, the audio is replaced by silence, so applause or noise before the speaker starts does not produce stray words. After the first speech nothing is changed. |
+| Copy / Export / Clear | Copy the transcript, download it as a text file, or clear the displayed text (a running transcription continues). |
+
+The transcription language belongs to the video: built-in videos have a fixed language, uploads use the language
+chosen at upload. Selecting a video switches the models to its language (about 2 s when it changes).
+
+### VAD settings
+
+| Setting | Default | What it does |
+|---|---|---|
+| Silero threshold | 0.5 | Speech probability above which a frame counts as speech for the silence gate. Higher: less likely to open on applause, but may open slightly later. |
+| Look-ahead (s) | 0.5 | How much audio before the detected start of speech is kept, so the first word is not cut. It does not delay the text while someone is talking. |
+| End-of-turn horizon | 2 s | Which prediction drives the end-of-turn meter and the paragraphs: the probability that nobody speaks within the next 0.5 / 1 / 2 / 3 s. |
+| End-of-turn threshold | 0.6 | Above this value the speaker is considered finished. Raise it (e.g. 0.7) if paragraphs are too short. |
+| Paragraphs | on | Starts a new paragraph in the transcript at each end of turn. |
+
+The Silero threshold and the look-ahead apply from the next Start and are shared by everyone using the board. The
+end-of-turn settings apply immediately and are stored in your browser only.
+
+### Metrics
+
+| Metric | Meaning |
+|---|---|
+| Position | Video time the transcription has reached. |
+| First word | Time from Start until the first word appeared. |
+| Step time | Median NPU + CPU time per model step (one step per audio clock). |
+| Words / Characters | Size of the transcript (characters for Chinese). |
+| Silero VAD | Speech probability (the mark is the threshold), speech / silence, and the gate state: waiting for speech, or open with the seconds silenced before the speech. |
+| Board DRAM | Memory used on the whole board over the last minute; it stays flat during long runs. |
+| RTF | Real-time factor = step time / audio clock. Below 1 is faster than real time. |
+| End of turn | The model's end-of-turn prediction for the four horizons; the bar shows the selected horizon. |
+
+### Good to know
+
+- **Rolling context.** The model keeps about 30 s of context. The server retains the latest 200 step timings and reset records, with a separate total reset count. Audio arriving faster than inference can process still builds a backlog; the server reports it rather than dropping speech.
+- **Latency.** Words appear about 1 s after they are spoken; the model listens 480 ms ahead by design.
+- **Long pauses.** If the model stays silent although speech has resumed after a long pause, the demo restarts its
+  context and lets it re-listen to the last seconds (a new paragraph starts there).
+- **Start anywhere.** A start or a jump begins a fresh session at that point; a sentence cut by the jump may lose its
+  first words.
+- **One run at a time.** The board serves one transcription; a Start from any browser replaces the current run. Audio clock,
+  language and gate settings are shared.
+- **Slow connections.** Each event subscriber has a 256-event queue. A stalled subscriber is disconnected when that queue fills or a socket write times out; other subscribers and inference continue. Reconnecting does not replay missed transcript events.
+- **Stopping the server.** SIGTERM/SIGINT stop the worker and wait for any synchronous native call before explicitly closing the engine. During initial model loading, shutdown is deferred until creation returns and the engine has an owner; it then closes without opening the HTTP port.
+
+## Files
+
+| File | Content |
+|---|---|
+| `demo_server.py` | HTTP + SSE server: video list, audio from the page, upload / delete, audio clock and language switch, DRAM sampling |
+| `vad_gate.py` | Silero VAD start gate: only the non-speech before the first speech onset is replaced by silence |
+| `reset_policy.py` | soft-reset trigger policy (the mechanism is `Engine.soft_reset` in the SDK) |
+| `static/index.html` | the page, including the audio capture |
+| `static/pcm-worklet.js` | 16 kHz PCM16 resampler, used by the AudioWorklet and by the page's fallback |
+| `media/` | built-in videos: the first 10 minutes of three product launches (mp4, Git LFS) + language tags (`<stem>.json`) |
+| `run.sh` | sets `LD_LIBRARY_PATH`, then starts the server |
+
+Uploaded videos are saved in `media/uploads/` (not committed).
+
+The built-in videos are recordings of public product launches (a Steve Jobs keynote, the Xiaomi 18 Pro launch, the
+Smartisan OS 2013 launch). See [../NOTICE](../NOTICE).
+
+The README demonstration recording uses a separate, licensed FOSDEM 2025 talk excerpt by Lorna Mitchell,
+with attribution retained. See [source, license and changes](../docs/MEDIA_ATTRIBUTION.md).
+
+
+## Optional hotwords
+
+Expand Hotwords, enable the checkbox and enter comma- or newline-separated words/phrases. Default is off and the word list is empty. Changes apply on the next Start or seek, not halfway through the current session. Advanced controls expose top-k and first/continuation boosts. Prefer a short list relevant to the content; ordinary words can be changed incorrectly.
+
+For the development SDK, provide the matching optional tokenizer asset with `A8_TOKENIZER=/absolute/path/to/tokenizer.json bash demo/run.sh`. The SDK can alternatively resolve `extras.tokenizer` or `tokenizer.json` at the model-package root. Existing released packages do not contain this newly required optional asset; a new release has not been published. No tokenizer is needed while hotwords remain disabled.
+
+## Server shutdown
+
+SIGTERM and SIGINT stop the server and wait for the synchronous inference worker to finish before closing the native engine. New sessions are rejected during shutdown. The same cleanup runs when the HTTP port cannot be bound after model initialization.

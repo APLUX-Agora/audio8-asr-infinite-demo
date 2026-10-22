@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="6 4.5 100 100" role="img" aria-label="Pandora">
+  <rect x="24" y="58" width="72" height="44" rx="12" fill="#5741E3"/>
+  <rect x="22" y="45" width="80" height="14" rx="7" fill="#5741E3" transform="rotate(-30 23 58)"/>
+  <path fill="#FF7500" d="M77 30Q79.08 40.92 90 43Q79.08 45.08 77 56Q74.92 45.08 64 43Q74.92 40.92 77 30Z"/>
+</svg>
