@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-#define A8_VERSION "0.6.0"
+#define A8_VERSION "0.6.1"
 
 #if defined(__GNUC__)
 #define A8_API __attribute__((visibility("default")))

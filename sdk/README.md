@@ -8,10 +8,22 @@ README's setup).
 
 | | |
 |---|---|
-| Version | 0.6.0 (`A8_VERSION`) |
+| Version | 0.6.1 (`A8_VERSION`) |
 | Model resources | Matching ModelFarm/mms package with manifest and single-file prefix caches |
-| Built with | Ubuntu 22.04 aarch64, g++ 11.4, aidlite-sdk 2.5.0, aidlite-qnn248 2.5.0, QNN / QAIRT 2.48, ICU 70 |
-| sha256 | `0c2c8714895ecc87bacf91156a16171eef61bda28d342c85a9911f14f2d56c65` |
+| Built with | Ubuntu 22.04 aarch64, g++ 11.4, aidlite-sdk 2.5.0, aidlite-qnn248 2.5.0, QNN / QAIRT 2.48, privately embedded ICU 70.1 |
+| sha256 | `7b1dfc1d1cf1b2959dfd7c013c73eb89665f720f3c927c6b89afe92b022e1e40` |
+
+## System compatibility
+
+One AArch64 SDK binary targets Ubuntu22.04,24.04 and26.04. The same file passed official arm64 userspace ABI/dependency/C-API-load checks for all three. Actual NPU inference, hotwords and memory/exit checks cover QCS8550 on Ubuntu22.04;24.04/26.04 BSP/NPU execution has not been tested. AidLite/QNN and the board BSP remain separate platform prerequisites.
+
+ICU70.1 code and complete Unicode data are embedded in the library. No system ICU package, old ICU SONAME or separate tokenizer compute library is required. Model packages are unchanged. Python3.10 was used for the examples and Web tests.
+
+| Ubuntu arm64 | Same SDK ABI/load checks | NPU inference and lifecycle |
+|---|---|---|
+| 22.04 | Passed | Passed on QCS8550/160ms |
+| 24.04 | Passed | Not tested |
+| 26.04 | Passed | Not tested |
 
 ## C API
 
@@ -86,13 +98,13 @@ Discovery is packaging/interface glue: it neither checks all payload hashes nor 
 The Web application's preflight validates its required files; native model loading remains authoritative.
 The real-name SDK uses `audio8_asr`, `A8Error`, `a8_*` and `AUDIO8_ASR_LIB` in every delivery. Older release tags retain their original `live_transcribe_01` interface and library; the incompatible naming migration is documented in [the migration guide](../docs/REAL_MODEL_MIGRATION.md).
 
-## Optional hotwords (development SDK 0.6.0)
+## Optional hotwords (SDK 0.6.1)
 
 Hotword bias is disabled by default. The C++ library owns UTF-8 tokenization, prefix matching, quantized-logit score adjustment and history. There are no term-specific spelling, syntax or semantic rules. Existing model weights and graph files are unchanged.
 
 After `reset()` and before feeding audio, call `engine.set_hotwords(["term", "a phrase"], tokenizer_path="/path/to/matching/tokenizer.json")`. The defaults are top-k 50, first-token boost 6 and continuation boost 8; pass an empty list to disable. Configuration persists across reset, while matching history clears on reset and soft reset. C users call `a8_set_hotwords`; the existing options/info layouts are unchanged. The Python wrapper still works with an older library while hotwords are disabled, and reports an unsupported-feature error if enabled.
 
-The matching tokenizer JSON is an optional runtime resource, resolved from an explicit path, manifest `extras.tokenizer`, or package-root `tokenizer.json`. It is required only when enabling hotwords. Historical released model packages do not automatically gain this asset; distribution of the new SDK/resource pair is pending. Do not substitute another model's tokenizer. The tokenizer is lazy-loaded and linked inside the same SDK library; the build requires ICU 67+ development headers (`libicu-dev`); the tested Ubuntu 22.04 binary links to `libicu70`, which must be installed at runtime.
+The matching tokenizer JSON is an optional runtime resource, resolved from an explicit path, manifest `extras.tokenizer`, or package-root `tokenizer.json`. It is required only when enabling hotwords. Historical released model packages do not automatically gain this asset; distribution of the new SDK/resource pair is pending. Do not substitute another model's tokenizer. The tokenizer is lazy-initialized inside the same SDK library. ICU 70.1 code and its complete Unicode data are compiled as private PIC static archives into that library; no system ICU package or ICU_DATA directory is required. The CMake build downloads a SHA256-pinned official ICU source archive, or accepts the identical archive through `-DAUDIO8_ICU_ARCHIVE=/path/to/icu4c-70_1-src.tgz` for offline builds. It never falls back to the host ICU installation. See `sdk/cmake/StaticICU.cmake` and `sdk/third_party/icu/LICENSE`.
 
 These are preferences, not guaranteed vocabulary constraints. False merges of ordinary expressions are possible. The original-model development probe corrected selected technical terms but also introduced two errors in 65 constructed negatives. Board results must be evaluated separately; no universal accuracy claim is made.
 

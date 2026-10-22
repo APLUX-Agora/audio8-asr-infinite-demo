@@ -60,7 +60,7 @@ sudo aid-pkg install aidlite-qnn248
 **3. System packages**: ffmpeg (ffprobe checks uploaded videos in the web demo) and libsndfile (audio file reading).
 
 ```bash
-sudo apt install ffmpeg libsndfile1 libicu70 python3-venv
+sudo apt install ffmpeg libsndfile1 python3-venv
 ```
 
 **4. Isolated Python environment** (Python 3.10 tested): each demo has its own `.venv`.
@@ -71,6 +71,12 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python -m pip check
 ```
+
+## System compatibility
+
+One AArch64 SDK binary targets Ubuntu22.04,24.04 and26.04. The same file passed official arm64 userspace ABI/dependency/C-API-load checks for all three. Actual NPU inference, hotwords and memory/exit checks cover QCS8550 on Ubuntu22.04;24.04/26.04 BSP/NPU execution has not been tested. AidLite/QNN and the board BSP remain separate platform prerequisites.
+
+ICU70.1 code and complete Unicode data are embedded in the library. No system ICU package, old ICU SONAME or separate tokenizer compute library is required. Model packages are unchanged. Python3.10 was used for the examples and Web tests.
 
 ## Quick start
 

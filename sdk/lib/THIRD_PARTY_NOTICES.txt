@@ -24,6 +24,7 @@ https://github.com/snakers4/silero-vad
 AidLux AidLite and Qualcomm QNN / QAIRT are separately installed runtime dependencies and are not distributed here.
 Their own license terms apply. Separately downloaded recognition models retain their own terms and notices.
 
-ICU is a separately installed system dependency used for Unicode normalization and regular expressions.
-ICU is not bundled in this SDK archive; its Unicode license and system-package notices apply.
-The tested Ubuntu 22.04 build requires libicu70.
+ICU 70.1 code and its complete Unicode data are statically embedded in libaudio8_asr.so
+for Unicode normalization and regular expressions. No system ICU package is required.
+Source: https://github.com/unicode-org/icu/releases/tag/release-70-1
+The complete ICU copyright, Unicode data and third-party notices accompany this SDK in LICENSES/ICU.txt.

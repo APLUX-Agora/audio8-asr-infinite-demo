@@ -90,7 +90,7 @@ For one model, place its package at `models/qnn248_qcs8550/manifest.json`; SDK/e
 
 SDK, examples and Web share model discovery, anchored to this checkout. An explicit `--models` or `A8_MODELS` value must point directly at the manifest. Multiple immediate child packages require an explicit path. Discovery does not prove hardware compatibility or file integrity.
 
-Keep every required graph, tensor, vocabulary, prefix cache, configuration and license. The Web application verifies manifest targets and checksums before loading. SDK 0.6.0 uses the single-file prefix-cache format; 0.4.x per-layer packages are incompatible. Model bytes are unchanged by the real-name SDK migration. Exact HF resource revisions are recorded in the internal release pairing.
+Keep every required graph, tensor, vocabulary, prefix cache, configuration and license. The Web application verifies manifest targets and checksums before loading. SDK 0.6.x uses the single-file prefix-cache format; 0.4.x per-layer packages are incompatible. Model bytes are unchanged by the real-name SDK migration. Exact HF resource revisions are recorded in the internal release pairing.
 
 ## Layout
 
