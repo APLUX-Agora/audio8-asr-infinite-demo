@@ -38,7 +38,7 @@ Download the ModelFarm package matching your board. The prebuilt SDK is shared a
 
 ## Run the demo
 
-This repository contains the application code, Python examples, and prebuilt SDK. Model files are stored separately in the private model repositories.
+This repository contains the application code, Python examples, and prebuilt SDK. Obtain model packages separately through ModelFarm MMS; a private Hugging Face token is not required.
 
 ## Setup
 
@@ -76,12 +76,30 @@ python3 -m venv .venv
 
 On the board, from the root of this repository:
 
-**1. Install the authorized model package for your board.** The two real models are stored separately:
+**1. Get the model through ModelFarm MMS.**
 
-- [Audio8-ASR-Infinite-160ms](https://huggingface.co/APLUX-GenAI4/Audio8-ASR-Infinite-160ms) (recommended).
-- [Audio8-ASR-Infinite-80ms](https://huggingface.co/APLUX-GenAI4/Audio8-ASR-Infinite-80ms).
+**Pending publication:** the MMS model resources are not published yet. The commands below are prepared for the planned entries and will only work after publication; they are not verified download results.
 
-Each private repository organizes resources by SoC and QNN version. For QCS8550 / QNN 2.48, retain the complete `qnn248_qcs8550/` package, including manifest, checksums and licenses, under this checkout's `models/` directory. The manifest should be at `models/qnn248_qcs8550/manifest.json`. Obtain authorized model access through your distributor; credentials are not included in this code repository. See [models/README.md](models/README.md).
+On an APLUX board, install MMS if needed, log in with your ModelFarm account, and request the recommended 160ms model:
+
+```bash
+sudo aid-pkg install aid-mms
+mms login
+mms list Audio8-ASR-Infinite
+mkdir -p downloads/audio8-160ms
+mms get -m Audio8-ASR-Infinite-160ms -p w4a16 -c qcs8550 -b qnn2.48 -d downloads/audio8-160ms
+```
+
+For the separate 80ms model, use a different download directory:
+
+```bash
+mkdir -p downloads/audio8-80ms
+mms get -m Audio8-ASR-Infinite-80ms -p w4a16 -c qcs8550 -b qnn2.48 -d downloads/audio8-80ms
+```
+
+Replace `qcs8550` with the chipset matching your board. The other prepared selectors are `qcs8625`, `qcs8275` (IQ8), and `qcs9075` (IQ9). These commands use the planned `W4A16` / `QNN2.48` selections; confirm the published choices with `mms list` when resources become available.
+
+Inspect the download and extract an archive if MMS returns one. Install the **complete** package so the manifest is at `models/qnn248_qcs8550/manifest.json` for QCS8550 / QNN 2.48 (or the corresponding chip directory). Do not assume MMS downloads directly into a ready-to-load layout. See [models/README.md](models/README.md) for extraction, package placement and keeping both models separately. No HF login/token is needed for the intended MMS workflow.
 
 **2. Start the Web Demo**. With one downloaded package, no model-path option is needed:
 
