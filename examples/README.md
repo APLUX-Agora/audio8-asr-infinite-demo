@@ -1,6 +1,6 @@
 # SDK examples
 
-Run from the checkout root after [installation](../README.md#install) and [model placement](../models/README.md).
+Run from the checkout root after [installation](../README.md#1-install) and [model placement](../models/README.md).
 The Python programs use this Demo's `.venv`. They read soundfile-supported audio formats, mix channels and resample
 to16kHz. Their inference calls use the shipped Python SDK; the C++ example calls the same library's C ABI.
 

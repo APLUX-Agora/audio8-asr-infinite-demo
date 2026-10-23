@@ -38,7 +38,7 @@ Open `http://<board-ip>:8765/`.
 | `A8_RECOVER` | reset | soft-reset policy; `off` disables it |
 | `A8_RESET_AFTER_S` / `A8_RESET_QUIET_S` / `A8_RESET_BACKOFF_S` | 2 / 2 / 10 | soft-reset trigger parameters (`reset_policy.py`) |
 
-Requirements: the setup in the [main README](../README.md#install) (AidLite runtime, ffmpeg for ffprobe, the Python
+Requirements: the setup in the [main README](../README.md#1-install) (AidLite runtime, ffmpeg for ffprobe, the Python
 packages of `requirements.txt`). In the browser: a current Chrome, Edge or Firefox.
 
 ## Model package checks
