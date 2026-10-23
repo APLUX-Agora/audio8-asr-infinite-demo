@@ -8,7 +8,6 @@ keep its manifest, tokenizer, weights, shared files, checksums and licenses toge
 The main README uses the 160ms model on QCS8550:
 
 ```bash
-mkdir -p models
 mms login
 mms list Audio8-ASR-Infinite
 mms get -m Audio8-ASR-Infinite-160ms -p w4a16 -c qcs8550 -b qnn2.48 -d models

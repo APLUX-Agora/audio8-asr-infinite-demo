@@ -4,9 +4,9 @@ Streaming speech recognition on Qualcomm devices, powered by Edge0's [Audio8-ASR
 
 [Pandora](https://pandora.aidlux.com/en/demos/live-transcribe-01/) · [ModelFarm](https://aiot.aidlux.com/en/models?name=Audio8)
 
-https://github.com/user-attachments/assets/97a0599d-f6f0-4725-9093-da80a8d94b55
+[![Watch the demo video](docs/demo-poster.jpg)](https://pandora.aidlux.com/demos/live-transcribe-01/demo.mp4?v=14dc73371549)
 
-[Download the full-quality recording](docs/demo.mp4)
+[Watch video](https://pandora.aidlux.com/demos/live-transcribe-01/demo.mp4?v=14dc73371549) · [Download recording](docs/demo.mp4)
 
 Source: Lorna Mitchell, FOSDEM 2025, **CC BY 2.0 BE**. Original credits are retained; the excerpt is trimmed and transcoded. [Source, license and changes](docs/MEDIA_ATTRIBUTION.md).
 
@@ -28,7 +28,6 @@ python3 -m venv .venv
 From the repository root, download the **160ms / QCS8550** model into `models/`:
 
 ```bash
-mkdir -p models
 mms login
 mms list Audio8-ASR-Infinite
 mms get -m Audio8-ASR-Infinite-160ms -p w4a16 -c qcs8550 -b qnn2.48 -d models
