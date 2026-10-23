@@ -6,14 +6,6 @@
 
 [Explore the demo on Pandora](https://pandora.aidlux.com/en/demos/live-transcribe-01/) · [Get the code on GitHub](https://github.com/APLUX-Pandora/audio8-asr-infinite-demo) · [Get the models on ModelFarm](https://aiot.aidlux.com/en/models?name=Audio8)
 
-## What you can do
-
-- Transcribe speech as audio arrives, with continuous streaming for long sessions.
-- Work with Chinese and English using the same SDK.
-- Segment the transcript when a speaker finishes a turn.
-- Run inference locally on the board's NPU, without cloud inference or a GPU.
-- Integrate through a C API or Python binding, or start with the web demo.
-
 ## Demo
 
 https://github.com/user-attachments/assets/97a0599d-f6f0-4725-9093-da80a8d94b55
@@ -22,120 +14,65 @@ https://github.com/user-attachments/assets/97a0599d-f6f0-4725-9093-da80a8d94b55
 
 Source: Lorna Mitchell, FOSDEM 2025, **CC BY 2.0 BE**. Original credits are retained; the excerpt is trimmed and transcoded. [Source, license and changes](docs/MEDIA_ATTRIBUTION.md).
 
-The web demo plays a built-in or uploaded video while the board transcribes its audio. Watch the transcript, end-of-turn prediction, and board load update in real time.
+The Web Demo plays built-in or uploaded video and shows streaming transcription. The same inference library
+also supports standalone Python and C++ file integration.
 
-## Supported hardware
+## Install
 
-| Hardware | Model folder | Status |
-| --- | --- | --- |
-| Qualcomm QCS8550 | `qnn248_qcs8550` | Available |
-| Qualcomm QCS8625 | `qnn248_qcs8625` | Available |
-| Qualcomm Dragonwing IQ8 (QCS8275) | `qnn248_qcs8275` | Available |
-| Qualcomm Dragonwing IQ9 (QCS9075) | `qnn248_qcs9075` | Available |
-| Qualcomm Dragonwing IQ10 | — | Coming soon |
-
-Download the ModelFarm package matching your board. The prebuilt SDK is shared across these supported chips; model packages are chip-specific.
-
-## Run the demo
-
-This repository contains the application code, Python examples, and prebuilt SDK. Obtain model packages separately through ModelFarm MMS; a private Hugging Face token is not required.
-
-## Setup
-
-Once, on the board (AidLux image):
-
-**1. This repository**:
+This repository is currently private; use an authorized GitHub account. On a Linux AArch64 AidLux board,
+clone it first, then install platform prerequisites and a project-local Python environment (Python3.10 tested):
 
 ```bash
-git clone https://github.com/APLUX-Pandora/audio8-asr-infinite-demo.git && cd audio8-asr-infinite-demo
-```
-
-**2. Inference runtime**: AidLite and its QNN 2.48 backend.
-
-```bash
-sudo aid-pkg install aidlite-sdk
-sudo aid-pkg install aidlite-qnn248
-```
-
-**3. System packages**: ffmpeg (ffprobe checks uploaded videos in the web demo) and libsndfile (audio file reading).
-
-```bash
+git clone https://github.com/APLUX-Pandora/audio8-asr-infinite-demo.git
+cd audio8-asr-infinite-demo
+sudo aid-pkg install aidlite-sdk aidlite-qnn248
 sudo apt install ffmpeg libsndfile1 python3-venv
-```
-
-**4. Isolated Python environment** (Python 3.10 tested): each demo has its own `.venv`.
-Do not install this demo into system Python or reuse another demo’s environment.
-
-```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python -m pip check
 ```
 
-## System compatibility
+Use your supported platform runtime; do not replace shared board drivers/runtime packages for this Demo.
+System/SDK compatibility and native loader requirements are in the [SDK guide](sdk/README.md).
 
-One AArch64 SDK binary targets Ubuntu22.04,24.04 and26.04. The same file passed official arm64 userspace ABI/dependency/C-API-load checks for all three. Actual NPU inference, hotwords and memory/exit checks cover QCS8550 on Ubuntu22.04;24.04/26.04 BSP/NPU execution has not been tested. AidLite/QNN and the board BSP remain separate platform prerequisites.
+## Get and place a model
 
-ICU70.1 code and complete Unicode data are embedded in the library. No system ICU package, old ICU SONAME or separate tokenizer compute library is required. Model packages are unchanged. Python3.10 was used for the examples and Web tests.
-
-## Quick start
-
-On the board, from the root of this repository:
-
-**1. Get the model through ModelFarm MMS.**
-
-**Pending publication:** the MMS model resources are not published yet. The commands below are prepared for the planned entries and will only work after publication; they are not verified download results.
-
-On an APLUX board, install MMS if needed, log in with your ModelFarm account, and request the recommended 160ms model:
+Obtain the model from ModelFarm MMS using your ModelFarm account; no private HF token is required.
+The following selectors are prepared; catalog publication, downloads and archive layout are **not verified**:
 
 ```bash
 sudo aid-pkg install aid-mms
 mms login
 mms list Audio8-ASR-Infinite
-mkdir -p downloads/audio8-160ms
 mms get -m Audio8-ASR-Infinite-160ms -p w4a16 -c qcs8550 -b qnn2.48 -d downloads/audio8-160ms
 ```
 
-For the separate 80ms model, use a different download directory:
+Choose your chip and the separate80ms/160ms model. Copy the **complete** extracted package so its manifest
+is at `models/qnn248_qcs8550/manifest.json` for QCS8550. Check its `SHA256SUMS`.
+[Model instructions](models/README.md) cover the four resource targets,80ms selection and keeping both packages.
+QCS8550/QCS8625/IQ8(QCS8275)/IQ9(QCS9075) packages are present; resource availability is separate from the
+QCS8550/Ubuntu22.04/160ms runtime qualification.
 
-```bash
-mkdir -p downloads/audio8-80ms
-mms get -m Audio8-ASR-Infinite-80ms -p w4a16 -c qcs8550 -b qnn2.48 -d downloads/audio8-80ms
-```
-
-Replace `qcs8550` with the chipset matching your board. The other prepared selectors are `qcs8625`, `qcs8275` (IQ8), and `qcs9075` (IQ9). These commands use the planned `W4A16` / `QNN2.48` selections; confirm the published choices with `mms list` when resources become available.
-
-Inspect the download and extract an archive if MMS returns one. Install the **complete** package so the manifest is at `models/qnn248_qcs8550/manifest.json` for QCS8550 / QNN 2.48 (or the corresponding chip directory). Do not assume MMS downloads directly into a ready-to-load layout. See [models/README.md](models/README.md) for extraction, package placement and keeping both models separately. No HF login/token is needed for the intended MMS workflow.
-
-**2. Start the Web Demo**. With one downloaded package, no model-path option is needed:
+## Run the Web Demo
 
 ```bash
 demo/run.sh --port 8765
 ```
 
-Open `http://<board-ip>:8765/`. The launcher always uses this checkout's `.venv`; shell activation is not required.
+Open `http://<board-ip>:8765/`. The launcher uses this checkout's `.venv`.
+One package is discovered automatically; multiple packages require `--models PACKAGE_ROOT`.
+[Web guide](demo/README.md) covers controls, hotwords and graceful shutdown.
 
-**Or transcribe a file through the same Python SDK:**
+## Use Python examples
 
 ```bash
 .venv/bin/python examples/python/transcribe_file.py examples/audio/jobs_keynote_10min_16k.flac --lang en
 .venv/bin/python examples/python/stream_file.py examples/audio/xiaomi18pro_highlights_10min_16k.flac --lang zh
 ```
 
-The SDK/examples/Web share model discovery: a flat `models/manifest.json` remains supported; otherwise one immediate
-chip package is selected. Multiple packages require explicit selection, for example `demo/run.sh --models models/qnn248_qcs8550`
-or `--models models/qnn248_qcs8550` on a Python example. Explicit paths must directly contain the manifest and never silently
-fall back to another package. Relative explicit paths are interpreted from the caller's working directory; automatic
-paths are anchored to this checkout. A directory name alone does not prove hardware compatibility.
-
-## Learn more
-
-| | |
-|---|---|
-| [demo/README.md](demo/README.md) | the web demo: start-up options and what every control on the page does |
-| [examples/README.md](examples/README.md) | the Python examples and how to use the SDK in your own code |
-| [sdk/README.md](sdk/README.md) | the C API and the Python binding |
-| [models/README.md](models/README.md) | how to get the model files |
+[Examples](examples/README.md) explain file/stream options, hotwords and the compilable C++ example.
+Use the [Python API reference](sdk/PYTHON_API.md) for integration and the
+[C ABI integration guide](sdk/NATIVE_INTEGRATION.md) for native calls/build/linking. Both use the same `.so`.
 
 ## License
 

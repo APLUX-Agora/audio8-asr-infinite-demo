@@ -38,7 +38,7 @@ Open `http://<board-ip>:8765/`.
 | `A8_RECOVER` | reset | soft-reset policy; `off` disables it |
 | `A8_RESET_AFTER_S` / `A8_RESET_QUIET_S` / `A8_RESET_BACKOFF_S` | 2 / 2 / 10 | soft-reset trigger parameters (`reset_policy.py`) |
 
-Requirements: the setup in the [main README](../README.md#setup) (AidLite runtime, ffmpeg for ffprobe, the Python
+Requirements: the setup in the [main README](../README.md#install) (AidLite runtime, ffmpeg for ffprobe, the Python
 packages of `requirements.txt`). In the browser: a current Chrome, Edge or Firefox.
 
 ## Model package checks
@@ -150,7 +150,11 @@ with attribution retained. See [source, license and changes](../docs/MEDIA_ATTRI
 
 Expand Hotwords, enable the checkbox and enter comma- or newline-separated words/phrases. Default is off and the word list is empty. Changes apply on the next Start or seek, not halfway through the current session. Advanced controls expose top-k and first/continuation boosts. Prefer a short list relevant to the content; ordinary words can be changed incorrectly.
 
-For the development SDK, provide the matching optional tokenizer asset with `A8_TOKENIZER=/absolute/path/to/tokenizer.json bash demo/run.sh`. The SDK can alternatively resolve `extras.tokenizer` or `tokenizer.json` at the model-package root. Existing released packages do not contain this newly required optional asset; a new release has not been published. No tokenizer is needed while hotwords remain disabled.
+SDK0.6.1 and current ModelFarm packages include the matching optional tokenizer.json. The SDK resolves
+manifest extras.tokenizer or the package-root file automatically. A8_TOKENIZER may override it with the
+matching explicit file. No tokenizer or system ICU installation is needed while hotwords remain disabled.
+See the [Python API](../sdk/PYTHON_API.md)
+for limits and behavior.
 
 ## Server shutdown
 

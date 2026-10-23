@@ -22,6 +22,7 @@ from scipy.signal import resample_poly
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "sdk", "python"))
 from audio8_asr import Engine, A8Error, resolve_model_dir  # noqa: E402
+from example_lifecycle import managed_engine, ExampleInterrupted  # noqa: E402
 
 SR = 16000
 
@@ -63,25 +64,33 @@ def main():
 
     audio = load_audio(a.audio)
     t0 = time.time()
-    eng = Engine(a.models, clock_ms=a.clock_ms, lang=a.lang)          # loads the models onto the NPU (about 2 s)
-    print(f"[{eng.info['clock_ms']} ms clock models loaded in {time.time() - t0:.1f} s]", file=sys.stderr)
+    with managed_engine(Engine, a.models, clock_ms=a.clock_ms, lang=a.lang) as (eng, check_interrupted):
+        print(f"[{eng.info['clock_ms']} ms clock models loaded in {time.time() - t0:.1f} s]", file=sys.stderr)
 
-    dec = codecs.getincrementaldecoder("utf-8")(errors="replace")   # a token can hold part of a character
-    eng.reset()                                                 # new session
-    if a.hotword:
-        eng.set_hotwords(a.hotword, tokenizer_path=a.tokenizer, top_k=a.hotword_top_k,
-                         start_boost=a.hotword_start_boost, continuation_boost=a.hotword_continuation_boost)
-    t0 = time.time()
-    for i in range(0, len(audio), SR):                          # feed 1 s at a time (any chunk size works)
-        toks = eng.feed(audio[i:i + SR])
-        print(dec.decode(eng.text_of([t.id for t in toks])), end="", flush=True)
-    toks = eng.finish()                                         # end of input: flush the last words
-    print(dec.decode(eng.text_of([t.id for t in toks]), final=True), flush=True)
-    wall = time.time() - t0
-    dur = len(audio) / SR
-    print(f"[{dur:.1f} s of audio in {wall:.1f} s, RTF {wall / dur:.2f}]", file=sys.stderr)
-    eng.close()
+        dec = codecs.getincrementaldecoder("utf-8")(errors="replace")   # a token can hold part of a character
+        eng.reset()                                                 # new session
+        if a.hotword:
+            eng.set_hotwords(a.hotword, tokenizer_path=a.tokenizer, top_k=a.hotword_top_k,
+                             start_boost=a.hotword_start_boost, continuation_boost=a.hotword_continuation_boost)
+        t0 = time.time()
+        check_interrupted()
+        for i in range(0, len(audio), SR):                          # feed 1 s at a time (any chunk size works)
+            check_interrupted()
+            toks = eng.feed(audio[i:i + SR])
+            check_interrupted()
+            print(dec.decode(eng.text_of([t.id for t in toks])), end="", flush=True)
+        check_interrupted()
+        toks = eng.finish()                                         # end of input: flush the last words
+        check_interrupted()
+        print(dec.decode(eng.text_of([t.id for t in toks]), final=True), flush=True)
+        wall = time.time() - t0
+        dur = len(audio) / SR
+        print(f"[{dur:.1f} s of audio in {wall:.1f} s, RTF {wall / dur:.2f}]", file=sys.stderr)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ExampleInterrupted as error:
+        print(str(error), file=sys.stderr)
+        sys.exit(128 + error.signum)

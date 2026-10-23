@@ -30,6 +30,7 @@ sys.path[:0] = [os.path.join(ROOT, "sdk", "python"), os.path.join(ROOT, "demo"),
 from audio8_asr import Engine, A8Error, extra_file, resolve_model_dir  # noqa: E402
 from reset_policy import ResetPolicy  # noqa: E402
 from transcribe_file import SR, load_audio  # noqa: E402
+from example_lifecycle import managed_engine, ExampleInterrupted  # noqa: E402
 
 PUNCT = " .,!?;:)]\"'”’。，！？；：、）》」』"
 
@@ -56,90 +57,98 @@ def main():
     print(f"[example] model package: {a.models}", file=sys.stderr)
 
     audio = load_audio(a.audio)
-    eng = Engine(a.models, clock_ms=a.clock_ms, lang=a.lang)
-    gate, pol = None, None
-    if not a.plain:
-        from vad_gate import SileroGate                          # needs onnxruntime
-        gate = SileroGate(extra_file(a.models, "silero_vad"))
-        pol = ResetPolicy(eng)
-    h = eng.info["eot_horizons_s"].index(a.eot_horizon)
-    delay_s = eng.info["num_delay_tokens"] * eng.clock_s
-    print(f"[{eng.info['clock_ms']} ms clock, {1000 * delay_s:.0f} ms model delay; "
-          f"{len(audio) / SR:.1f} s of audio, {'fast' if a.fast else 'real time'}{', plain' if a.plain else ''}]",
-          file=sys.stderr)
-
-    dec = codecs.getincrementaldecoder("utf-8")(errors="replace")   # a token can hold part of a character
-    chunk = SR * min(a.chunk_ms, round(1000 * eng.clock_s)) // 1000  # <= one clock: the policy runs before each clock
-    lags, n_tok, n_resets = [], 0, 0
-    started, armed, due, pending = False, False, None, False
-    eng.reset()
-    t0 = time.time()
-
-    def show(toks):
-        nonlocal n_tok, started, armed, due, pending
-        for t in toks:
-            n_tok += 1
-            # End of turn. The prediction of a step is about audio whose text is still num_delay_tokens tokens away,
-            # so the paragraph break waits for that text (one break per end-of-turn episode).
-            on = t.eot[h] >= a.eot_threshold
-            if on and armed:
-                due, armed = n_tok + eng.info["num_delay_tokens"], False
-            elif not on and started:
-                armed = True
-            if due is not None and n_tok >= due:
-                due, pending = None, started
-            piece = dec.decode(eng.token_bytes(t.id))
-            if not piece:
-                continue
-            if pending:                                       # closing punctuation stays with the previous paragraph
-                lead = piece[:len(piece) - len(piece.lstrip(PUNCT))]
-                print(lead.rstrip(), end="")
-                piece = piece[len(lead):]
-                if not piece.strip():
-                    continue
-                print(flush=True)
-                pending, started = False, False
-            if not started:
-                if not piece.strip():
-                    continue
-                print(f"[{max(0.0, t.audio_t - delay_s):7.2f} s] ", end="")   # when the first word was spoken
-                piece, started = piece.lstrip(), True
-            print(piece, end="", flush=True)
-            lags.append(time.time() - t0 - t.audio_t)         # text out vs. its audio having arrived
-
-    def feed(x):
-        nonlocal pending, n_resets
-        if pol is not None:
-            toks = pol.check(*gate.segment())                 # soft reset (re-listen) if the model got stuck
-            if len(pol.resets) > n_resets:
-                n_resets, pending = len(pol.resets), started  # the replayed text starts a new paragraph
-            show(toks)
-        new = eng.feed(x)
-        if pol is not None:
-            pol.observe(new)
-        show(new)
-
-    for i in range(0, len(audio), chunk):
-        if not a.fast:                                        # wait until this chunk "has been spoken"
-            time.sleep(max(0.0, t0 + (i + chunk) / SR - time.time()))
-        x = audio[i:i + chunk]
-        if gate is not None:
-            x = gate.process(x)                               # released audio (the gate may hold some back briefly)
-            if i + chunk >= len(audio):
-                x = np.concatenate([x, gate.flush()])
-        for j in range(0, len(x), chunk):                     # at most one clock per feed
-            feed(x[j:j + chunk])
-    show(eng.finish())
-    print(dec.decode(b"", final=True), flush=True)
-    if lags and not a.fast:
-        lags.sort()
-        print(f"[processing lag: median {lags[len(lags) // 2]:.2f} s, max {lags[-1]:.2f} s "
-              f"(+ {1000 * delay_s:.0f} ms model delay); wall {time.time() - t0:.1f} s; soft resets {n_resets}]",
+    with managed_engine(Engine, a.models, clock_ms=a.clock_ms, lang=a.lang) as (eng, check_interrupted):
+        gate, pol = None, None
+        if not a.plain:
+            from vad_gate import SileroGate                          # needs onnxruntime
+            gate = SileroGate(extra_file(a.models, "silero_vad"))
+            pol = ResetPolicy(eng)
+        h = eng.info["eot_horizons_s"].index(a.eot_horizon)
+        delay_s = eng.info["num_delay_tokens"] * eng.clock_s
+        print(f"[{eng.info['clock_ms']} ms clock, {1000 * delay_s:.0f} ms model delay; "
+              f"{len(audio) / SR:.1f} s of audio, {'fast' if a.fast else 'real time'}{', plain' if a.plain else ''}]",
               file=sys.stderr)
-    elif a.fast:
-        print(f"[wall {time.time() - t0:.1f} s; soft resets {n_resets}]", file=sys.stderr)
-    eng.close()
+
+        dec = codecs.getincrementaldecoder("utf-8")(errors="replace")   # a token can hold part of a character
+        chunk = SR * min(a.chunk_ms, round(1000 * eng.clock_s)) // 1000  # <= one clock: the policy runs before each clock
+        lags, n_tok, n_resets = [], 0, 0
+        started, armed, due, pending = False, False, None, False
+        eng.reset()
+        t0 = time.time()
+
+        def show(toks):
+            nonlocal n_tok, started, armed, due, pending
+            for t in toks:
+                n_tok += 1
+                # End of turn. The prediction of a step is about audio whose text is still num_delay_tokens tokens away,
+                # so the paragraph break waits for that text (one break per end-of-turn episode).
+                on = t.eot[h] >= a.eot_threshold
+                if on and armed:
+                    due, armed = n_tok + eng.info["num_delay_tokens"], False
+                elif not on and started:
+                    armed = True
+                if due is not None and n_tok >= due:
+                    due, pending = None, started
+                piece = dec.decode(eng.token_bytes(t.id))
+                if not piece:
+                    continue
+                if pending:                                       # closing punctuation stays with the previous paragraph
+                    lead = piece[:len(piece) - len(piece.lstrip(PUNCT))]
+                    print(lead.rstrip(), end="")
+                    piece = piece[len(lead):]
+                    if not piece.strip():
+                        continue
+                    print(flush=True)
+                    pending, started = False, False
+                if not started:
+                    if not piece.strip():
+                        continue
+                    print(f"[{max(0.0, t.audio_t - delay_s):7.2f} s] ", end="")   # when the first word was spoken
+                    piece, started = piece.lstrip(), True
+                print(piece, end="", flush=True)
+                lags.append(time.time() - t0 - t.audio_t)         # text out vs. its audio having arrived
+
+        def feed(x):
+            nonlocal pending, n_resets
+            if pol is not None:
+                toks = pol.check(*gate.segment())                 # soft reset (re-listen) if the model got stuck
+                if len(pol.resets) > n_resets:
+                    n_resets, pending = len(pol.resets), started  # the replayed text starts a new paragraph
+                show(toks)
+            check_interrupted()
+            new = eng.feed(x)
+            check_interrupted()
+            if pol is not None:
+                pol.observe(new)
+            show(new)
+
+        check_interrupted()
+        for i in range(0, len(audio), chunk):
+            if not a.fast:                                        # wait until this chunk "has been spoken"
+                time.sleep(max(0.0, t0 + (i + chunk) / SR - time.time()))
+            x = audio[i:i + chunk]
+            if gate is not None:
+                x = gate.process(x)                               # released audio (the gate may hold some back briefly)
+                if i + chunk >= len(audio):
+                    x = np.concatenate([x, gate.flush()])
+            for j in range(0, len(x), chunk):                     # at most one clock per feed
+                feed(x[j:j + chunk])
+        check_interrupted()
+        show(eng.finish())
+        check_interrupted()
+        print(dec.decode(b"", final=True), flush=True)
+        if lags and not a.fast:
+            lags.sort()
+            print(f"[processing lag: median {lags[len(lags) // 2]:.2f} s, max {lags[-1]:.2f} s "
+                  f"(+ {1000 * delay_s:.0f} ms model delay); wall {time.time() - t0:.1f} s; soft resets {n_resets}]",
+                  file=sys.stderr)
+        elif a.fast:
+            print(f"[wall {time.time() - t0:.1f} s; soft resets {n_resets}]", file=sys.stderr)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ExampleInterrupted as error:
+        print(str(error), file=sys.stderr)
+        sys.exit(128 + error.signum)

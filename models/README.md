@@ -4,7 +4,7 @@ ModelFarm MMS is the model-download entry point; this GitHub repository provides
 
 ## Download through ModelFarm MMS
 
-**Pending publication (2026-10-22):** the model resources are not yet downloadable through MMS. The commands below are prepared for the planned model entries, not successful download verification. Availability, final selectors and archive layout will be reconciled after publication. MMS uses your ModelFarm account; no private Hugging Face token is required.
+**Pending publication (2026-10-22):** the model resources are not yet downloadable through MMS. The commands below are prepared for the planned model entries, not successful download verification. Confirm available choices with mms list; this documentation does not claim a tested download. MMS uses your ModelFarm account; no private Hugging Face token is required.
 
 Run on an APLUX board, from the Demo checkout root:
 
@@ -102,7 +102,8 @@ one is missing or does not match the model. The SDK, the examples and the web de
 qnn248_<chip>/                   one model package (the SDK's model directory)
 ├── manifest.json                the files of each audio clock (read by the SDK)
 ├── SHA256SUMS                   checksums of all files
-├── common/                      shared by both audio clocks
+├── tokenizer.json               matching optional hotword tokenizer
+├── common/                      resources within this one model package
 │   ├── embedding.npy            token embedding table (CPU lookup)
 │   ├── rotation.npy             rotation used when the 30 s context rolls
 │   ├── mel_filters.npy          mel filterbank

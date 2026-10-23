@@ -1,112 +1,41 @@
-# sdk
+# Audio8-ASR-Infinite SDK
 
-Prebuilt `libaudio8_asr.so` (`lib/`) and its public interface
-[include/audio8_asr.h](include/audio8_asr.h).
+The prebuilt `lib/libaudio8_asr.so` and [C ABI header](include/audio8_asr.h) are shared by Python and C/C++ callers.
+Use the [Python API reference](PYTHON_API.md) for every method/result and the
+[C ABI integration guide](NATIVE_INTEGRATION.md) for native calls, compilation, linking and ownership.
+[Runnable examples](../examples/README.md) include Python file/stream programs and one C++ WAV program.
+There is no second SDK or separate C++ inference implementation.
 
-The library is built for aarch64 Linux (AidLux); it needs the AidLite runtime with the QNN 2.48 backend (see the main
-README's setup).
+- SDK version: **0.6.1**.
+- Library SHA256: `7b1dfc1d1cf1b2959dfd7c013c73eb89665f720f3c927c6b89afe92b022e1e40`.
+- Platform: Linux AArch64, AidLite/QNN2.48 and matching board BSP/driver.
+- Current ModelFarm packages contain single-file prefix caches and the optional matching hotword tokenizer.
+- ICU70.1 code and Unicode data are embedded; no system ICU installation is required.
 
-| | |
-|---|---|
-| Version | 0.6.1 (`A8_VERSION`) |
-| Model resources | Matching ModelFarm/mms package with manifest and single-file prefix caches |
-| Built with | Ubuntu 22.04 aarch64, g++ 11.4, aidlite-sdk 2.5.0, aidlite-qnn248 2.5.0, QNN / QAIRT 2.48, privately embedded ICU 70.1 |
-| sha256 | `7b1dfc1d1cf1b2959dfd7c013c73eb89665f720f3c927c6b89afe92b022e1e40` |
+## Compatibility
 
-## System compatibility
+The same binary passed Ubuntu22.04/24.04/26.04 arm64 userspace ABI/dependency/load checks.
+Existing NPU inference/hotword/lifecycle coverage is QCS8550 on Ubuntu22.04 with the160ms model;
+24.04/26.04 BSP/NPU execution and other resource targets are not implied by userspace checks.
+Python3.10 is the tested example/Web interpreter. AidLite/QNN remain external prerequisites;
+see the [native environment and loader requirements](NATIVE_INTEGRATION.md#target-and-linking).
 
-One AArch64 SDK binary targets Ubuntu22.04,24.04 and26.04. The same file passed official arm64 userspace ABI/dependency/C-API-load checks for all three. Actual NPU inference, hotwords and memory/exit checks cover QCS8550 on Ubuntu22.04;24.04/26.04 BSP/NPU execution has not been tested. AidLite/QNN and the board BSP remain separate platform prerequisites.
+## C API and Python integration
 
-ICU70.1 code and complete Unicode data are embedded in the library. No system ICU package, old ICU SONAME or separate tokenizer compute library is required. Model packages are unchanged. Python3.10 was used for the examples and Web tests.
+Use the same prebuilt SDK from Python or C/C++. See the complete
+[Python API reference](PYTHON_API.md) and [C ABI integration guide](NATIVE_INTEGRATION.md).
+The guides cover options, inputs, return values, errors, resource ownership, call order and cleanup.
+Runnable [Python and C++ examples](../examples/README.md) use those public interfaces.
 
-| Ubuntu arm64 | Same SDK ABI/load checks | NPU inference and lifecycle |
-|---|---|---|
-| 22.04 | Passed | Passed on QCS8550/160ms |
-| 24.04 | Passed | Not tested |
-| 26.04 | Passed | Not tested |
-
-## C API
-
-```c
-a8_options o; a8_default_options(&o); o.clock_ms = 160; o.lang = A8_LANG_ZH;   // also roll_s, semantic_vad, replay_max_s
-a8_engine *e = a8_create("models", &o);       // NULL on failure: a8_create_error()
-a8_reset(e);                                   // new session
-a8_feed(e, pcm, n);                            // returns the number of new tokens
-a8_read_tokens(e, toks, cap);                  // id / is_text / audio_t / eot[4]
-a8_token_bytes(e, id, buf, cap);               // UTF-8 bytes (decode incrementally)
-a8_soft_reset(e, replay_from_s);               // mechanism: LM back to the prefix + replay of cached audio rows
-a8_finish(e, -1);                              // end of input: default silent tail (5 clocks at 160 ms, 7 at 80 ms)
-a8_eot_probs / a8_get_info / a8_get_stats / a8_last_error / a8_destroy
-```
-
-Return codes: `>= 0` success or a count, `< 0` an `A8_ERR_*` code with the message in `a8_last_error`.
-
-## Python binding
-
-`python/audio8_asr.py` (ctypes, used by the business layer):
-
-```python
-from audio8_asr import Engine
-eng = Engine(clock_ms=160, lang="zh")
-eng.reset()
-toks = eng.feed(pcm_f32)               # [Token(id, is_text, audio_t, eot), ...]
-text = eng.text_of([t.id for t in toks])
-toks += eng.finish()
-eng.soft_reset(replay_from_s); eng.stats(); eng.info; eng.close()
-```
-
-Library lookup order: `$AUDIO8_ASR_LIB`, `sdk/lib/`, `sdk/build/`, then the system loader path.
-
-## Design notes
-
-- **Passive engine.** No threads, timers or IO in the .so. `a8_feed` synchronously runs every clock the audio
-  completes; how much to feed and when is the caller's choice.
-- **Chunk invariance.** The same audio gives the same tokens however it is chunked.
-- **Outputs through a queue.** `a8_feed` / `a8_finish` / `a8_soft_reset` return how many tokens were added; the caller
-  drains them with `a8_read_tokens`, so it never has to guess buffer sizes.
-- **Text as bytes.** `a8_token_bytes` returns UTF-8 bytes; a token can be part of a character, so decode incrementally.
-- **No file names in the library.** The model directory's `manifest.json` lists the files of each audio clock; the
-  library loads exactly these and fails with a message naming the missing or mismatching file (format, clock, key,
-  path; shapes and tensor interfaces are checked against the model).
-- **Audio clock and language at create time.** The clock (160 or 80 ms, upstream `frame_len` 8 / 4) selects the model
-  package, the language only selects the LM prefix KV (language token). To switch, destroy and create again. A clock
-  whose package is not installed fails with a clear message.
-- **Soft reset: mechanism in the .so, policy in the caller.** The .so resets the LM to its prefix and replays the
-  cached audio rows; when to do it (Silero onset, time without output, backoff) is decided by the business layer
-  (`demo/reset_policy.py`). Valid once the first token is out.
-- **Semantic VAD.** Every token carries P(no speech within 0.5 / 1 / 2 / 3 s) (`a8_token.eot`); the full [4][8]
-  distribution is available through `a8_eot_probs`.
-- **One engine = one thread at a time.**
+A session follows create -> reset -> optional hotwords -> feed/drain -> finish/drain -> close.
+Do not call soft_reset or feed after finish without resetting. Signal handlers should request a stop;
+wait for synchronous native work before destruction. The library does not perform file IO or own a worker.
 
 ## Environment variables
 
-| Variable | Default | Effect |
-|---|---|---|
-| `A8_KEEP_STDOUT` | unset | `a8_create` / `a8_destroy` send the process's stdout to stderr while the runtime loads and releases the graphs (its license and fastrpc notices); set it (e.g. `1`) to keep them on stdout |
-| `A8_AIDLITE_LOG` | `warning` | aidlite's log level; `info` shows everything |
-
-## Python package discovery
-
-The current main-branch Python binding exposes `resolve_model_dir()` and allows `Engine()` without a path.
-It discovers this checkout's `models/manifest.json` first, otherwise a unique immediate child package. Multiple
-packages require an explicit root, for example `Engine("models/qnn248_qcs8550", lang="en")`. An explicit invalid or
-empty path raises the MODEL error before native loading; it never selects a different package. `engine.model_dir`
-reports the resolved root. Explicit relative paths use the caller's working directory. Standalone integrations
-should pass their package root explicitly. Native C callers continue to supply the exact root to the C API.
-
-Discovery is packaging/interface glue: it neither checks all payload hashes nor proves chip compatibility.
-The Web application's preflight validates its required files; native model loading remains authoritative.
-The real-name SDK uses `audio8_asr`, `A8Error`, `a8_*` and `AUDIO8_ASR_LIB` in every delivery. Older release tags retain their original `live_transcribe_01` interface and library; the incompatible naming migration is documented in [the migration guide](../docs/REAL_MODEL_MIGRATION.md).
-
-## Optional hotwords (SDK 0.6.1)
-
-Hotword bias is disabled by default. The C++ library owns UTF-8 tokenization, prefix matching, quantized-logit score adjustment and history. There are no term-specific spelling, syntax or semantic rules. Existing model weights and graph files are unchanged.
-
-After `reset()` and before feeding audio, call `engine.set_hotwords(["term", "a phrase"], tokenizer_path="/path/to/matching/tokenizer.json")`. The defaults are top-k 50, first-token boost 6 and continuation boost 8; pass an empty list to disable. Configuration persists across reset, while matching history clears on reset and soft reset. C users call `a8_set_hotwords`; the existing options/info layouts are unchanged. The Python wrapper still works with an older library while hotwords are disabled, and reports an unsupported-feature error if enabled.
-
-The matching tokenizer JSON is an optional runtime resource, resolved from an explicit path, manifest `extras.tokenizer`, or package-root `tokenizer.json`. It is required only when enabling hotwords. Historical released model packages do not automatically gain this asset; distribution of the new SDK/resource pair is pending. Do not substitute another model's tokenizer. The tokenizer is lazy-initialized inside the same SDK library. ICU 70.1 code and its complete Unicode data are compiled as private PIC static archives into that library; no system ICU package or ICU_DATA directory is required. The CMake build downloads a SHA256-pinned official ICU source archive, or accepts the identical archive through `-DAUDIO8_ICU_ARCHIVE=/path/to/icu4c-70_1-src.tgz` for offline builds. It never falls back to the host ICU installation. See `sdk/cmake/StaticICU.cmake` and `sdk/third_party/icu/LICENSE`.
-
-These are preferences, not guaranteed vocabulary constraints. False merges of ordinary expressions are possible. The original-model development probe corrected selected technical terms but also introduced two errors in 65 constructed negatives. Board results must be evaluated separately; no universal accuracy claim is made.
+- `AUDIO8_ASR_LIB`: explicit qualified library path.
+- `A8_KEEP_STDOUT=1`: retain vendor initialization/destruction notices on stdout instead of stderr.
+- `A8_AIDLITE_LOG`: AidLite log level, default `warning`.
 
 
 ## Licensing / 许可
