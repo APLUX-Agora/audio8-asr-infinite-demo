@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-#define A8_VERSION "0.6.1"
+#define A8_VERSION "0.7.0"
 
 #if defined(__GNUC__)
 #define A8_API __attribute__((visibility("default")))
@@ -106,6 +106,17 @@ A8_API const char *a8_last_error(a8_engine *e);
 
 /* New session: KV back to the prefix, positions and time restart, token queue cleared. */
 A8_API int a8_reset(a8_engine *e);
+
+/* Begin one exclusive request without reloading model graphs. max_new_tokens=0
+ * uses the continuous model's native unlimited-clock policy. Counts include
+ * emitted streaming/control tokens. lang is A8_LANG_ZH or A8_LANG_EN. */
+A8_API int a8_begin_request(a8_engine *e, int lang, int64_t max_new_tokens);
+/* 0 running, 1 normal EOF/drain, 2 generation cap; negative on API error. */
+A8_API int a8_request_state(a8_engine *e);
+/* Finite final audio plus EOF/tail in one operation; preserves exact-cap normal
+ * completion. Same PCM contract as a8_feed; tail_tokens=-1 uses native default. */
+A8_API int a8_finish_audio(a8_engine *e, const float *pcm, int n, int tail_tokens);
+
 
 /* Optional decode-time token-prefix bias, disabled by default. Call after create/reset,
    before feeding any audio. words_json is a JSON array of UTF-8 strings; [] disables.

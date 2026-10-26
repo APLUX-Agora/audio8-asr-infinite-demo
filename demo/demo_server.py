@@ -41,7 +41,7 @@ sys.path.insert(0, f"{ROOT}/sdk/python")
 
 import numpy as np  # noqa: E402
 
-from audio8_asr import Engine, A8Error, extra_file, resolve_model_dir  # noqa: E402
+from audio8_asr import ASRModel, HotwordConfig, A8Error, extra_file, resolve_model_dir  # noqa: E402
 from model_package_check import PackageVerifier
 from reset_policy import ResetPolicy  # noqa: E402
 from vad_gate import SileroGate  # noqa: E402
@@ -122,6 +122,7 @@ class Session:
         self.clock = c if c in self.clocks else self.clocks[0]
         self.lang = os.environ.get("A8_LANG", "en")
         self.asr = None
+        self.model = None
         self.worker_thread = threading.Thread(target=self.worker, name="asr-worker", daemon=True)
         self.sysmon_thread = threading.Thread(target=self.sysmon, name="asr-sysmon", daemon=True)
         try:
@@ -149,7 +150,13 @@ class Session:
 
     def load_engine(self):
         t = time.time()
-        self.asr = Engine(MODELS, clock_ms=int(self.clock), lang=self.lang)
+        self.model = ASRModel.from_pretrained(MODELS, clock_ms=int(self.clock))
+        try:
+            self.asr = self.model.create_stream(sample_rate=16000, language=self.lang)
+        except BaseException:
+            self.model.close()
+            self.model = None
+            raise
         self.policy = ResetPolicy(self.asr)
         self.init_s = time.time() - t
         self.fs = self.asr.sampling_rate
@@ -161,6 +168,9 @@ class Session:
         if self.asr is not None:
             self.asr.close()
         self.asr = None
+        if self.model is not None:
+            self.model.close()
+            self.model = None
 
     # ------------------------------------------------------------ events
     def broadcast(self, ev):
@@ -228,9 +238,9 @@ class Session:
             config = validate_hotwords(config)
         except ValueError as e:
             return None, str(e)
-        tokenizer = os.environ.get("A8_TOKENIZER") or extra_file(MODELS, "tokenizer") or os.path.join(MODELS, "tokenizer.json")
+        tokenizer = extra_file(MODELS, "tokenizer") or os.path.join(MODELS, "tokenizer.json")
         if config["words"] and not os.path.isfile(tokenizer):
-            return None, "Hotwords need the matching tokenizer.json; configure A8_TOKENIZER on the server."
+            return None, "Hotwords need the matching tokenizer.json in the selected model package."
         p = media_path(vid)
         if p is None:
             return None, "unknown video"
@@ -379,15 +389,17 @@ class Session:
                 continue
             asr = self.asr
             if state == "reset":
-                asr.reset(); self.policy.reset(); self.gate.reset(); self.n_gen = 0
+                asr.close()
                 with self.lock:
                     off_s, jump = self.offset_s, self.jump
                     hotwords = dict(self.hotwords)
-                if hotwords["words"]:
-                    tokenizer = os.environ.get("A8_TOKENIZER") or extra_file(MODELS, "tokenizer")
-                    asr.set_hotwords(tokenizer_path=tokenizer, **hotwords)
-                else:
-                    asr.set_hotwords([])
+                hints = HotwordConfig(tuple(hotwords["words"]), hotwords["top_k"],
+                                      hotwords["start_boost"], hotwords["continuation_boost"])
+                asr = self.asr = self.model.create_stream(sample_rate=self.fs, language=self.lang,
+                                                         hotwords=hints)
+                self.policy = ResetPolicy(asr)
+                self.gate.reset()
+                self.n_gen = 0
                 self.off_s = off_s
                 dec, fed, pend, steps, t_start, first_char = (codecs.getincrementaldecoder("utf-8")(errors="replace"), 0,
                                                               np.zeros(0, np.float32), collections.deque(maxlen=200), time.time(), None)
@@ -415,7 +427,8 @@ class Session:
                 t = time.time()
                 chunk, pend = pend[:self.spt], pend[self.spt:]
                 toks = self.policy.check(*self.gate.segment())    # soft-reset trigger (business layer) before the next row
-                new = asr.feed(chunk)
+                asr.feed(chunk)
+                new = list(asr.last_tokens)
                 self.policy.observe(new)
                 toks += new
                 fed += chunk.size
@@ -428,13 +441,14 @@ class Session:
             elif ended and flushed:
                 done, reason = True, "end"
             if done:
-                toks = asr.finish()
+                result = asr.finish()
+                toks = list(asr.last_tokens)
                 self.policy.observe(toks)
                 self.emit(toks, dec, fed, steps, first_char, final=True, eot=self.eot(toks))
                 with self.lock:
                     if self.sid == sid:
                         self.state = "done"
-                self.broadcast({"type": "state", "state": "done", "reason": reason, "audio_s": round(self.off_s + fed / self.fs, 2)})
+                self.broadcast({"type": "state", "state": "done", "reason": reason, "finish_reason": result.finish_reason, "audio_s": round(self.off_s + fed / self.fs, 2)})
                 continue
             time.sleep(0.01)
 

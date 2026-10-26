@@ -1,10 +1,10 @@
-"""Soft-reset trigger (business layer; the mechanism is Engine.soft_reset in the SDK).
+"""Soft-reset trigger (business layer; the mechanism is ASRStream.soft_reset in the SDK).
 
 Principle for long audio: never miss speech (noise turned into text is acceptable); the model and its decoding stay
 untouched. After a long non-speech stretch the model can stay on STREAMING_PAD for minutes although speech is back
 (the full-precision model does it too).
 Trigger: Silero reports a speech segment (vad_active, vad_onset_s) and, reset_after_s after its onset, there has been
-no output since (onset - reset_quiet_s). Action: Engine.soft_reset(onset - replay_pre_s): LM context back to the prefix,
+no output since (onset - reset_quiet_s). Action: ASRStream.soft_reset(onset - replay_pre_s): LM context back to the prefix,
 the cached audio rows from there (at most replay_max_s, an engine option) are replayed, then live audio continues.
 Limits: one reset per speech segment; after a reset that produced no output the next one waits backoff_s.
 "Output" = any token other than STREAMING_PAD.

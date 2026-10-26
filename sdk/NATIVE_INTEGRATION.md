@@ -111,3 +111,15 @@ Normal stdout is transcript UTF-8 bytes plus a newline. Diagnostics go to stderr
 One SDK0.6.1 binary passed Ubuntu22.04/24.04/26.04 arm64 userspace checks; existing actual NPU coverage is
 QCS8550/Ubuntu22.04/160ms. That is not a claim of NPU/BSP validation on24.04/26.04 or every resource target.
 Keep model, runtime and SDK versions matched; do not infer hardware compatibility from the folder name alone.
+
+## SDK 0.7.0 request controls
+
+These additive C ABI functions underpin the new Python task API. Existing C calls retain their signatures.
+
+| Function | Parameters and result |
+| --- | --- |
+| `a8_begin_request(e, int lang, int64_t max_new_tokens)` | Start a fresh exclusive request. `lang` is `A8_LANG_ZH` or `A8_LANG_EN`. Restore the selected language prefix and clear audio/LM/token/history/progress state without reloading graphs. `0` cap means native continuous policy; positive cap counts emitted tokens including controls. Configure/clear hotwords separately after beginning. Returns status `0` or negative error. |
+| `a8_request_state(e)` | Returns `0` running, `1` normal known-EOF/drained completion, `2` generation cap, or negative error. Copy the last error immediately on failure. |
+| `a8_finish_audio(e, const float *pcm, int n, int tail_tokens)` | Append final finite model-rate mono PCM and declare EOF before running remaining work/tails. Same PCM/ownership contract as feed; `n>=0`, pointer required when `n>0`; `tail_tokens=-1` uses native default. Returns count of queued tokens or negative error. Drain with `a8_read_tokens`. Unlike feed followed by finish, this preserves normal completion when the cap equals the precise final workload. |
+
+After a live `a8_feed` exhausts the cap, state is terminal `2`; do not call native finish again. A new request must begin/reset before more audio. A finite final-audio call returns state `1` if all required clocks finish exactly at the cap, or `2` if the cap blocks required work. No text slicing implements this budget. `a8_reset` restores the currently selected language and the original uncapped legacy session behavior. Language switching changes only existing prefix/cache state, not weights. All calls remain synchronous and must not race destroy. The Python layer additionally reserves one recording and caches its idempotent finish result; raw C finish is still once-only.

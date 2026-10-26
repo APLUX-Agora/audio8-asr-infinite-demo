@@ -6,17 +6,17 @@ Use the [Python API reference](PYTHON_API.md) for every method/result and the
 [Runnable examples](../examples/README.md) include Python file/stream programs and one C++ WAV program.
 There is no second SDK or separate C++ inference implementation.
 
-- SDK version: **0.6.1**.
-- Library SHA256: `7b1dfc1d1cf1b2959dfd7c013c73eb89665f720f3c927c6b89afe92b022e1e40`.
+- SDK version: **0.7.0**.
+- Library SHA256: `21d8381b323f6a4f341363892a65ff9904568f879e3c5174d59c9aba1f43cc67`.
 - Platform: Linux AArch64, AidLite/QNN2.48 and matching board BSP/driver.
 - Current ModelFarm packages contain single-file prefix caches and the optional matching hotword tokenizer.
 - ICU70.1 code and Unicode data are embedded; no system ICU installation is required.
 
 ## Compatibility
 
-The same binary passed Ubuntu22.04/24.04/26.04 arm64 userspace ABI/dependency/load checks.
-Existing NPU inference/hotword/lifecycle coverage is QCS8550 on Ubuntu22.04 with the160ms model;
-24.04/26.04 BSP/NPU execution and other resource targets are not implied by userspace checks.
+This API candidate is tested on QCS8550 / Ubuntu22.04 with the160ms model.
+Prior SDK0.6.1 userspace checks do not qualify the new0.7.0 binary on Ubuntu24.04/26.04.
+Other clocks, chip targets and Ubuntu releases require their own qualification before broader claims.
 Python3.10 is the tested example/Web interpreter. AidLite/QNN remain external prerequisites;
 see the [native environment and loader requirements](NATIVE_INTEGRATION.md#target-and-linking).
 

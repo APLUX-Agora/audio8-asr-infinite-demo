@@ -9,7 +9,7 @@ Long real-world audio (talks with music, applause, video inserts) needs the same
 demo, imported from demo/:
   - vad_gate.SileroGate: replaces the non-speech before the first speech onset with silence;
   - reset_policy.ResetPolicy: after a long non-speech stretch the model can stay silent although speech is back; the
-    policy then calls Engine.soft_reset (the model re-listens to the last seconds). Without it the transcript can stop
+    policy then calls ASRStream.soft_reset (the model re-listens to the last seconds). Without it the transcript can stop
     for minutes (try --plain on examples/audio/xiaomi18pro_highlights_10min_16k.flac).
 At the end the processing lag is reported: how long after its audio had arrived each piece of text came out (the
 model's fixed 480 ms transcription delay comes on top of it).
@@ -27,7 +27,7 @@ import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path[:0] = [os.path.join(ROOT, "sdk", "python"), os.path.join(ROOT, "demo"), os.path.dirname(os.path.abspath(__file__))]
-from audio8_asr import Engine, A8Error, extra_file, resolve_model_dir  # noqa: E402
+from audio8_asr import ASRModel, A8Error, extra_file, resolve_model_dir  # noqa: E402
 from reset_policy import ResetPolicy  # noqa: E402
 from transcribe_file import SR, load_audio  # noqa: E402
 from example_lifecycle import managed_engine, ExampleInterrupted  # noqa: E402
@@ -57,7 +57,7 @@ def main():
     print(f"[example] model package: {a.models}", file=sys.stderr)
 
     audio = load_audio(a.audio)
-    with managed_engine(Engine, a.models, clock_ms=a.clock_ms, lang=a.lang) as (eng, check_interrupted):
+    with managed_engine(ASRModel.from_pretrained, a.models, clock_ms=a.clock_ms) as (model, check_interrupted), model.create_stream(sample_rate=SR, language=a.lang) as eng:
         gate, pol = None, None
         if not a.plain:
             from vad_gate import SileroGate                          # needs onnxruntime
@@ -73,7 +73,6 @@ def main():
         chunk = SR * min(a.chunk_ms, round(1000 * eng.clock_s)) // 1000  # <= one clock: the policy runs before each clock
         lags, n_tok, n_resets = [], 0, 0
         started, armed, due, pending = False, False, None, False
-        eng.reset()
         t0 = time.time()
 
         def show(toks):
@@ -116,7 +115,8 @@ def main():
                     n_resets, pending = len(pol.resets), started  # the replayed text starts a new paragraph
                 show(toks)
             check_interrupted()
-            new = eng.feed(x)
+            eng.feed(x)
+            new = list(eng.last_tokens)
             check_interrupted()
             if pol is not None:
                 pol.observe(new)
@@ -134,7 +134,9 @@ def main():
             for j in range(0, len(x), chunk):                     # at most one clock per feed
                 feed(x[j:j + chunk])
         check_interrupted()
-        show(eng.finish())
+        result = eng.finish()
+        show(eng.last_tokens)
+        print(f"[finish_reason={result.finish_reason}]", file=sys.stderr)
         check_interrupted()
         print(dec.decode(b"", final=True), flush=True)
         if lags and not a.fast:

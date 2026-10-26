@@ -131,7 +131,7 @@ end-of-turn settings apply immediately and are stored in your browser only.
 |---|---|
 | `demo_server.py` | HTTP + SSE server: video list, audio from the page, upload / delete, audio clock and language switch, DRAM sampling |
 | `vad_gate.py` | Silero VAD start gate: only the non-speech before the first speech onset is replaced by silence |
-| `reset_policy.py` | soft-reset trigger policy (the mechanism is `Engine.soft_reset` in the SDK) |
+| `reset_policy.py` | soft-reset trigger policy (the mechanism is `ASRStream.soft_reset` in the SDK) |
 | `static/index.html` | the page, including the audio capture |
 | `static/pcm-worklet.js` | 16 kHz PCM16 resampler, used by the AudioWorklet and by the page's fallback |
 | `media/` | built-in videos: the first 10 minutes of three product launches (mp4, Git LFS) + language tags (`<stem>.json`) |

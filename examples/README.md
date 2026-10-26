@@ -1,8 +1,7 @@
 # SDK examples
 
 Run from the checkout root after [installation](../README.md#1-install) and [model placement](../models/README.md).
-The Python programs use this Demo's `.venv`. They read soundfile-supported audio formats, mix channels and resample
-to16kHz. Their inference calls use the shipped Python SDK; the C++ example calls the same library's C ABI.
+The Python programs use this Demo's `.venv`. They use the editable SDK audio adapter for WAV/FLAC/MP3, mono/stereo conversion and 16kHz resampling. More than two channels require explicit selection in application code. Their inference calls use the shipped Python SDK; the C++ example calls the same library's C ABI.
 
 ## Python file transcription
 
@@ -21,9 +20,9 @@ applause or pauses, the streaming example adds the Web Demo's silence gate and s
 | --- | --- | --- |
 | `--models PACKAGE` | Both | Exact root containing manifest.json; overrides A8_MODELS. Otherwise discover one package in checkout models/. |
 | `--clock-ms 160` or `80` | Both | Select the clock installed in that package; default installed clock,160 preferred. |
-| `--lang en` or `zh` | Both | Spoken language; default en. |
+| `--lang en` or `zh` | Both | Explicit language. File example defaults to the model default zh; streaming presentation example defaults to en. |
+| `--max-new-tokens N` | transcribe_file | Positive generation cap, including controls; result reports stop/length. |
 | `--hotword TERM` | transcribe_file | Repeat for multiple words/phrases; default off. |
-| `--tokenizer FILE` | transcribe_file | Optional explicit matching tokenizer; current packages include tokenizer.json. |
 | `--hotword-top-k`, `--hotword-start-boost`, `--hotword-continuation-boost` | transcribe_file | Bias settings; defaults50/6/8. See the API reference for limits. |
 | `--chunk-ms N` | stream_file | Audio chunk milliseconds; default80. |
 | `--eot-horizon N`, `--eot-threshold N` | stream_file | Paragraph end prediction; default2seconds/0.6. |
@@ -59,9 +58,10 @@ the native handle on normal return, errors and cooperative signals. See the
 
 ## Integrating Python
 
-The [Python API reference](../sdk/PYTHON_API.md) documents all Engine calls, parameter defaults, Token/info/stats,
-bytes/UTF-8 handling, errors, states and explicit close. Use try/finally, finish/drain once, and reset before the
-next stream. `text_of()` returns bytes, not a decoded string. The SDK does not read files, resample or mix channels.
+The [Python API reference](../sdk/PYTHON_API.md) documents `ASRModel.from_pretrained`,
+`transcribe`, `create_stream`, complete/update results, capabilities and exceptions.
+The stream example keeps VAD/endpoint/replay presentation in the business layer while owning a model and recording context.
+Audio conversion is public Python code; inference remains in the same native library.
 
 With80ms and160ms installed, keep independent package roots and explicitly pass `--models` to every example.
 Changing a package path does not prove chip compatibility. Preserve package checksums/licenses and use a qualified
