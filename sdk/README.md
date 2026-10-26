@@ -14,7 +14,7 @@ There is no second SDK or separate C++ inference implementation.
 
 ## Compatibility
 
-This API candidate is tested on QCS8550 / Ubuntu22.04 with the160ms model.
+This SDK is tested on QCS8550 / Ubuntu22.04 with the160ms model.
 Prior SDK0.6.1 userspace checks do not qualify the new0.7.0 binary on Ubuntu24.04/26.04.
 Other clocks, chip targets and Ubuntu releases require their own qualification before broader claims.
 Python3.10 is the tested example/Web interpreter. AidLite/QNN remain external prerequisites;

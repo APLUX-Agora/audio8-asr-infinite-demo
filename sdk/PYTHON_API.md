@@ -53,7 +53,7 @@ ASRModel.from_pretrained(model_dir=None, *, library=None, clock_ms=None,
                         replay_max_s=10.0)
 ```
 
-Requires candidate native SDK **0.7.0** with request-language, budget and final-audio controls. `clock_ms=None` selects an installed clock (160 first, then 80). Explicit clock must exist. Other options preserve native rolling, stable-row, semantic EOT and replay controls; they are not cross-model features. `stable_rows=-1` uses native defaults; `roll_s=0` disables rolling and therefore retains native context-capacity limits. `sdk_version`, `info` (copy) and `stats()` (last owned-call snapshot) expose advanced diagnostics.
+Requires native SDK **0.7.0** with request-language, budget and final-audio controls. `clock_ms=None` selects an installed clock (160 first, then 80). Explicit clock must exist. Other options preserve native rolling, stable-row, semantic EOT and replay controls; they are not cross-model features. `stable_rows=-1` uses native defaults; `roll_s=0` disables rolling and therefore retains native context-capacity limits. `sdk_version`, `info` (copy) and `stats()` (last owned-call snapshot) expose advanced diagnostics.
 
 - `language=None` defaults to Chinese; `"zh"`/`"en"` select native prefix state per request. `"auto"` is unsupported. Result language reports the selected language, not detected speech.
 - Free-text `prompt` is unsupported, including empty string.
