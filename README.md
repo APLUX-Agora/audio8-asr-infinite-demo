@@ -12,15 +12,17 @@ Source: Lorna Mitchell, FOSDEM 2025, **CC BY 2.0 BE**. Original credits are reta
 
 ## 1. Install
 
-Run on a supported Linux AArch64 AidLux board (Python 3.10 tested).
+Choose one installed CPython interpreter: **3.10, 3.11 or 3.12**. All three were verified on QCS8550 / Ubuntu 22.04 AArch64 with the same SDK and model package. The selected interpreter must provide the `venv` module; the `python3-venv` package supplies it for Ubuntu's default Python. Validation used the 160ms model; see [SDK compatibility](sdk/README.md#compatibility).
 
 ```bash
 git clone https://github.com/APLUX-Pandora/audio8-asr-infinite-demo.git
 cd audio8-asr-infinite-demo
 sudo aid-pkg install aidlite-sdk aidlite-qnn248 aid-mms
 sudo apt install ffmpeg libsndfile1 python3-venv
-python3 -m venv .venv
+DEMO_PYTHON=python3.10  # Or python3.11 / python3.12; choose one installed interpreter.
+"$DEMO_PYTHON" -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip check
 ```
 
 ## 2. Get the model

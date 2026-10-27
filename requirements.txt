@@ -1,5 +1,5 @@
-# Python packages for the Python binding, the examples and the web demo (python3 >= 3.8).
-# Tested on the board with python 3.10: numpy 1.26.4, soundfile 0.13.1, scipy 1.15.3, onnxruntime 1.23.2.
+# Python packages for the SDK, examples and Web Demo; supported CPython: 3.10, 3.11, 3.12.
+# Verified on QCS8550 / Ubuntu 22.04; use the selected interpreter's project venv.
 numpy>=1.22
 soundfile>=0.12      # reading audio files (examples)
 scipy>=1.8           # resampling audio files that are not 16 kHz (examples)

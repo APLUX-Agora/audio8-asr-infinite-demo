@@ -17,7 +17,7 @@ There is no second SDK or separate C++ inference implementation.
 This SDK is tested on QCS8550 / Ubuntu22.04 with the160ms model.
 Prior SDK0.6.1 userspace checks do not qualify the new0.7.0 binary on Ubuntu24.04/26.04.
 Other clocks, chip targets and Ubuntu releases require their own qualification before broader claims.
-Python3.10 is the tested example/Web interpreter. AidLite/QNN remain external prerequisites;
+CPython **3.10, 3.11 and 3.12** were verified for the Python SDK, examples and Web Demo with this same SDK and model package. Choose one interpreter with matching `venv` support and create this checkout's `.venv`; see [installation](../README.md#1-install). This does not extend the OS/BSP/NPU test scope. AidLite/QNN remain external prerequisites;
 see the [native environment and loader requirements](NATIVE_INTEGRATION.md#target-and-linking).
 
 ## C API and Python integration
