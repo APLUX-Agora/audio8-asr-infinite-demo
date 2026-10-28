@@ -104,6 +104,9 @@ class Session:
         self.offset_s, self.jump = 0.0, False            # start position of the current run in the video
         self.audio = collections.deque()                # (sid, float32 16 kHz chunk) posted by the page
         self.ended, self.pending = False, None
+        self.engine_error = None
+        self.manual_reload = False
+        self.engine_profile = None
         self.durs = {}
         self.hotwords = {"words": [], "top_k": 50, "start_boost": 6.0, "continuation_boost": 8.0}
         self.off_s = 0.0
@@ -151,6 +154,8 @@ class Session:
         t = time.time()
         self.model = ASRModel.from_pretrained(MODELS, clock_ms=int(self.clock))
         try:
+            if self.closing.is_set():
+                raise RuntimeError("server is closing")
             self.asr = self.model.create_stream(sample_rate=16000, language=self.lang)
         except BaseException:
             self.model.close()
@@ -161,6 +166,7 @@ class Session:
         self.fs = self.asr.sampling_rate
         self.spt = self.asr.samples_per_token
         self.clock_ms = 1000.0 * self.spt / self.fs
+        self.engine_profile = dict(self.asr.info)
         self.n_gen = 0
 
     def close_engine(self):
@@ -188,16 +194,18 @@ class Session:
             return self._info()
 
     def _info(self):
-        a = self.asr
-        if a is None:
-            return {"type": "info", "state": self.state}
-        roll = a.info["roll_s"]
-        return {"type": "info", "clocks": list(self.clocks), "clock_errors": dict(self.clock_errors), "lang": self.lang, "clock_ms": round(self.clock_ms),
-                "delay_ms": round(self.clock_ms * a.info["num_delay_tokens"]),
+        base = {"type": "info", "state": self.state, "engine_error": self.engine_error,
+                "reload_required": self.engine_error is not None}
+        profile = self.engine_profile
+        if profile is None:
+            return base
+        roll = profile["roll_s"]
+        return {**base, "clocks": list(self.clocks), "clock_errors": dict(self.clock_errors), "lang": self.lang, "clock_ms": round(self.clock_ms),
+                "delay_ms": round(self.clock_ms * profile["num_delay_tokens"]),
                 "max_audio_s": None if roll else round((MAX_POS - STOP_MARGIN) * self.clock_ms / 1000, 1),
                 "roll_s": round(roll, 1) if roll else None,
                 "init_s": round(self.init_s, 1), "state": self.state, "video": self.video, "vad": self.gate.enabled,
-                "hotwords": dict(self.hotwords), "vad_params": self.gate.params, "eot_horizons_s": a.info["eot_horizons_s"]}
+                "hotwords": dict(self.hotwords), "vad_params": self.gate.params, "eot_horizons_s": profile["eot_horizons_s"]}
 
     def videos(self):
         out = []
@@ -248,9 +256,13 @@ class Session:
                 return None, "server is closing"
             if self.state in ("reload",):
                 return None, "engine is loading"
+            if self.engine_error:
+                return None, "model requires manual reload: " + self.engine_error
         if video_lang(p) != self.lang:                   # the page switches the language when a video is selected
             return None, f"this video is {video_lang(p)}, the engine is {self.lang}: switch first"
         with self.lock:
+            if self.closing.is_set() or self.state == "reload" or self.engine_error:
+                return None, "model is unavailable; wait for loading or reload the failed model"
             self.sid += 1
             self.hotwords = config
             self.video, self.offset_s, self.jump = vid, max(0.0, float(offset_s)), bool(jump)
@@ -279,7 +291,7 @@ class Session:
             # A delayed cleanup request from an interrupted browser must not stop a newer run.
             if sid is not None and sid != self.sid:
                 return
-            if self.state == "reload":
+            if self.state in ("reload", "error"):
                 return
             self.sid += 1
             self.state = "idle"
@@ -299,6 +311,8 @@ class Session:
         with self.lock:
             if self.state == "reload":
                 return "engine is loading"
+            if self.engine_error:
+                return "model requires manual reload: " + self.engine_error
         error = self.package.error(clock)             # verify before scheduling a reload or releasing the old engine
         with self.lock:
             if error:
@@ -312,12 +326,45 @@ class Session:
         with self.lock:
             if self.state == "reload":
                 return "engine is loading"
+            if self.closing.is_set() or self.engine_error:
+                return "model is unavailable; reload the failed model first"
             if (clock, lang) == (self.clock, self.lang):
                 return None
             self.sid += 1
+            self.manual_reload = False
             self.pending, self.state = (clock, lang), "reload"
         self.broadcast({"type": "loading", "on": True, "clock_ms": clock, "lang": lang})
         return None
+
+    def request_reload(self):
+        """Queue recovery only. The inference worker owns destruction and creation."""
+        with self.lock:
+            if self.closing.is_set():
+                return "server is closing"
+            if self.state == "reload":
+                return "engine is loading"
+            if self.state != "error" or not self.engine_error:
+                return "manual reload is available after an inference or model-load failure"
+            self.sid += 1
+            self.audio.clear()
+            self.ended = False
+            self.pending = (self.clock, self.lang)
+            self.manual_reload, self.state = True, "reload"
+        self.broadcast(self.info())
+        self.broadcast({"type": "loading", "on": True, "clock_ms": self.clock, "lang": self.lang})
+        return None
+
+    def fail_engine(self, error):
+        """Keep the invalid instance quarantined until the user requests recovery."""
+        with self.lock:
+            self.sid += 1
+            self.audio.clear()
+            self.ended = False
+            self.pending, self.manual_reload = None, False
+            self.engine_error = f"{type(error).__name__}: {error}"
+            self.state = "error"
+        self.broadcast(self.info())
+        self.broadcast({"type": "loading", "on": False, "reload_required": True, "error": self.engine_error})
 
     def upload(self, name, rfile, length, lang="zh"):
         base = re.sub(r"[^A-Za-z0-9._-]+", "_", os.path.basename(name)).strip("._") or "video.mp4"
@@ -367,10 +414,7 @@ class Session:
             except Exception as e:  # noqa: BLE001
                 import traceback
                 traceback.print_exc()
-                with self.lock:
-                    self.sid += 1
-                    self.state = "idle"
-                self.broadcast({"type": "state", "state": "idle", "error": f"{type(e).__name__}: {e}"})
+                self.fail_engine(e)
 
     def work(self):
         # pend = gated samples not yet fed; fed = samples fed to the engine in this run. The audio arrives from the page in
@@ -455,20 +499,37 @@ class Session:
             time.sleep(0.01)
 
     def reload(self):
-        clock, lang = self.pending
+        with self.lock:
+            clock, lang = self.pending
+            manual = self.manual_reload
         old = (self.clock, self.lang)
         err = None
+        loaded = False
         self.close_engine()
-        for c, l in ((clock, lang), old):                # fall back to the previous config if the new one fails
+        attempts = [(clock, lang)] if manual else [(clock, lang), old]
+        for c, l in attempts:                           # manual recovery makes exactly one attempt
+            if self.closing.is_set():
+                return
             try:
                 self.clock, self.lang = c, l              # audio clock / language are chosen at engine creation
                 self.load_engine()
+                self.gate.reset()
+                loaded = True
                 break
             except Exception as e:  # noqa: BLE001
                 err = f"{type(e).__name__}: {e}"
                 print(f"[demo] engine load {c} ms/{l} failed: {err}", flush=True)
+                self.close_engine()
+        if self.closing.is_set():
+            return
+        if not loaded:
+            self.fail_engine(RuntimeError(err or "model reload failed"))
+            return
         with self.lock:
             self.pending, self.video, self.state = None, None, "idle"
+            self.manual_reload, self.engine_error = False, None
+            self.audio.clear()
+            self.ended = False
         print(f"[demo] engine reloaded in {self.init_s:.1f}s, {self.clock} ms clock, lang {self.lang}", flush=True)
         self.broadcast(self.info())
         self.broadcast({"type": "loading", "on": False, "error": err})
@@ -571,6 +632,9 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({})
         if p == "/api/config":
             err = S.configure(str(b.get("clock_ms")), str(b.get("lang")))
+            return self._json({} if err is None else {"error": err}, 200 if err is None else 409)
+        if p == "/api/reload":
+            err = S.request_reload()
             return self._json({} if err is None else {"error": err}, 200 if err is None else 409)
         if p == "/api/vad":
             S.set_vad(b)

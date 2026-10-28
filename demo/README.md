@@ -160,6 +160,25 @@ for limits and behavior.
 
 SIGTERM and SIGINT stop the server and wait for the synchronous inference worker to finish before closing the native engine. New sessions are rejected during shutdown. The same cleanup runs when the HTTP port cannot be bound after model initialization.
 
+## Inference failure and manual model reload
+
+When inference fails, the page pauses playback, preserves the transcript and marks it incomplete.
+Start and model configuration are blocked; the server rejects requests that would reuse the failed model.
+Click **Reload model** to explicitly recover. The inference worker closes the old recording/model after
+its current call has unwound, then creates a new instance with the selected clock/language. HTTP handlers
+only queue this operation. Concurrent reload requests are rejected while loading.
+
+Each manual click makes one model-load attempt. A load failure keeps its error visible, retains the
+transcript and provides the same retry button. A successful load enables Start, keeps playback paused
+and retains the old transcript's incomplete marker, including Copy/Export. Seek to before the failure
+and press Start for a fresh transcription; audio is never automatically replayed after recovery.
+Shutdown during loading waits for model ownership to return and explicitly closes any created instance.
+
+`POST /api/reload` is a Web business endpoint. It queues recovery only for a failed engine; current state
+and error are available from `/api/videos` and the event stream. The Python SDK's public inference API
+and native library are unchanged. Transport interruptions use the incomplete-recording workflow above;
+the Reload model button appears when the server reports an engine failure.
+
 ## Installed Python SDK
 
 The repository-root `requirements.txt` installs `./sdk` into this Demo's selected `.venv`.

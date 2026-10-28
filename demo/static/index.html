@@ -27,6 +27,7 @@
   .chip { padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-size: 12px; white-space: nowrap; }
   .chip.running { color: var(--ok); border-color: var(--ok); }
   .chip.done { color: var(--accent); border-color: var(--accent); }
+  .chip.error { color: var(--warn); border-color: var(--warn); }
   .foot { color: var(--muted); font-size: 12px; }
   main { flex: 1; min-height: 0; display: grid; gap: 12px; padding: 12px 16px 16px;
          grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto;
@@ -141,6 +142,7 @@
       <select id="videoSel"></select>
       <button id="startBtn" class="primary">Start</button>
       <button id="stopBtn">Stop</button>
+      <button id="reloadBtn" class="primary" hidden>Reload model</button>
       <select id="upLang" title="Language spoken in the video you upload">
         <option value="zh">Upload as Chinese</option>
         <option value="en">Upload as English</option>
@@ -293,11 +295,12 @@
     <tr><th>Symptom</th><th>What to do</th></tr>
     <tr><td>"Disconnected" in the header</td><td>The page lost the board connection: check the network and reload the page.</td></tr>
     <tr><td>"Incomplete" after an audio delivery failure</td><td>Playback stops on a network error, failed HTTP request or 10-second request timeout. Reconnect, seek to before the interruption and press Start for a new transcription. Copied/downloaded text is marked incomplete until then.</td></tr>
+    <tr><td>"Model failed" or model reload failed</td><td>The transcript is incomplete and Start is disabled. Read the error, click Reload model and wait. If loading fails, fix the reported model/runtime problem and retry. Successful loading keeps playback paused and preserves the previous transcript; seek to before the failure and press Start for a new transcription.</td></tr>
     <tr><td>No sound</td><td>Check the browser / system volume and the player's volume control; press Start again.</td></tr>
     <tr><td>Upload failed: no audio track</td><td>The file has no audio; use a video with sound, preferably MP4 (H.264 + AAC).</td></tr>
     <tr><td>No text while the video plays</td><td>The page sends the sound it plays to the board: keep the player unmuted with some volume.</td></tr>
     <tr><td>Video does not play after upload</td><td>Your browser cannot decode the format; convert it to MP4 (H.264 + AAC).</td></tr>
-    <tr><td>Model load failed (after an audio clock / language change)</td><td>The previous setting is kept automatically; try again or reload the page.</td></tr>
+    <tr><td>Model load failed after an audio clock / language change</td><td>The previous setting is restored when possible. If the model remains failed, use Reload model; Start stays disabled until loading succeeds.</td></tr>
     <tr><td>Stray words before the speaker starts</td><td>Make sure Silence gate is on; raise the Silero threshold slightly.</td></tr>
   </table>
  </div>
@@ -448,10 +451,53 @@ async function post(url, body, signal) {
 // ScriptProcessorNode instead.
 let audioCtx = null, pcmNode = null, audioEpoch = 0, sendChain = Promise.resolve(), pcmReset = null;
 let audioController = new AbortController(), transportFailure = null;
+let engineError = null, engineReloading = false, inferenceFailure = null;
 const AUDIO_REQUEST_TIMEOUT_MS = 10000;
 function transcriptText() {
   const value = text.trim();
-  return value && transportFailure ? `[INCOMPLETE: ${transportFailure.message}]\n${value}` : value;
+  const failure = inferenceFailure || transportFailure;
+  return value && failure ? `[INCOMPLETE: ${failure.message}]\n${value}` : value;
+}
+function engineControls() {
+  $("startBtn").disabled = !!engineError || engineReloading || switching;
+  $("clockSel").disabled = !!engineError || engineReloading || switching;
+  $("reloadBtn").hidden = !engineError && !engineReloading;
+  $("reloadBtn").disabled = engineReloading || switching;
+  $("reloadBtn").textContent = engineReloading ? "Reloading model…" : "Reload model";
+}
+function failInference(message) {
+  engineError = message || "Model inference failed";
+  if (!inferenceFailure) inferenceFailure = {message: `Inference failed (${engineError}).`};
+  running = false; sid = null; restarting = false;
+  video.pause(); clearInterval(clockTimer); clearTimeout(seekTimer); newAudioEpoch();
+  finishSwitch();
+  setState("error", "Model failed");
+  const notice = $("notice"); notice.style.display = "block";
+  notice.textContent = `This transcript is incomplete. ${engineError}. Click Reload model, then press Start for a new transcription.`;
+  upMsg(engineError, true);
+  engineControls();
+}
+async function reloadModel() {
+  if (!engineError || engineReloading || switching) return;
+  const epoch = beginSwitch(clock, lang), controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    // Recover an uncertain response/reconnection without submitting a second live reload.
+    const response = await fetch("/api/videos", {cache: "no-store", signal: controller.signal});
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const info = await response.json();
+    if (epoch !== switchEpoch) return;
+    if (info.state === "reload") { watchSwitch(epoch); return; }
+    if (info.state !== "error") { handleEvent(info); return; }
+    const result = await fetch("/api/reload", {method: "POST", signal: controller.signal});
+    if (!result.ok) {
+      const body = await result.json();
+      throw new Error(body.error || `HTTP ${result.status}`);
+    }
+    if (epoch === switchEpoch) watchSwitch(epoch);
+  } catch (error) {
+    if (epoch === switchEpoch) finishSwitch("Could not confirm model reload: " + (error.message || String(error)));
+  } finally { clearTimeout(timer); }
 }
 async function audioRequest(url, options) {
   const parent = audioController.signal, controller = new AbortController();
@@ -598,11 +644,12 @@ let switching = false, switchTimer = null, switchEpoch = 0;
 const SWITCH_TIMEOUT_MS = 60000, SWITCH_POLL_MS = 500;
 function finishSwitch(error) {
   clearTimeout(switchTimer); switchTimer = null;
-  switching = false; ++switchEpoch; showOverlay(false);
+  switching = false; engineReloading = false; ++switchEpoch; showOverlay(false);
   if (error) { upMsg(error, true); $("clockSel").value = clock; }
+  engineControls();
 }
 function beginSwitch(c, l) {
-  switching = true;
+  switching = true; engineReloading = true; engineControls();
   showOverlay(true, `Loading the ${c || ""} ms clock · ${l === "zh" ? "Chinese" : "English"}…`);
   return ++switchEpoch;
 }
@@ -631,7 +678,7 @@ async function pollSwitch(epoch, deadline) {
 function watchSwitch(epoch) { pollSwitch(epoch, Date.now() + SWITCH_TIMEOUT_MS); }
 async function configureTo(c, l) {
   c = String(c);
-  if (switching || (c === clock && l === lang)) return;
+  if (engineError || engineReloading || switching || (c === clock && l === lang)) return;
   const epoch = beginSwitch(c, l), controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SWITCH_TIMEOUT_MS);
   try {
@@ -657,13 +704,13 @@ function hotwordOptions() {
           continuation_boost: Number($("hotwordContinuation").value)};
 }
 async function start() {
-  if (restarting || switching) return;
+  if (engineError || engineReloading || restarting || switching) return;
   restarting = true;
   const off = startPos();
   video.pause(); if (off === 0) video.currentTime = 0;
   running = false; sid = null; newAudioEpoch();
   const epoch = audioEpoch;
-  transportFailure = null; upMsg("");
+  transportFailure = null; inferenceFailure = null; upMsg("");
   resetTranscript(false);
   try {
     const response = await audioRequest("/api/start", { method: "POST", headers: { "Content-Type": "application/json" },
@@ -688,7 +735,7 @@ async function stop(signal) {
 }
 video.addEventListener("ended", () => { if (running) sendEnd(); });
 async function jump() {                            // playhead moved during a run: continue from there (fresh session)
-  if (!running || restarting) return;
+  if (engineError || engineReloading || !running || restarting) return;
   restarting = true; running = false; video.pause(); newAudioEpoch();
   const epoch = audioEpoch;
   try {
@@ -710,6 +757,7 @@ video.addEventListener("seeked", () => {           // debounce: scrubbing back a
 ["timeupdate", "loadedmetadata", "pause"].forEach(e => video.addEventListener(e, updateStartLabel));
 tr.addEventListener("click", e => { const t = e.target.dataset && e.target.dataset.t; if (t != null) video.currentTime = parseFloat(t); });
 $("startBtn").onclick = start;
+$("reloadBtn").onclick = reloadModel;
 $("copyBtn").onclick = copyText;
 $("dlBtn").onclick = downloadText;
 $("clearBtn").onclick = () => { text = ""; tr.innerHTML = '<span class="cursor"></span>'; needStamp = true; };
@@ -730,9 +778,19 @@ eotSel = +lsGet("demo.eotSel", "2"); $("eTh").value = lsGet("demo.eotThr", "0.6"
 
 const es = new EventSource("/api/events");
 function handleEvent(ev) {
+  if (ev.type === "info" && ev.state === "error") { failInference(ev.engine_error); return; }
+  if (ev.type === "info" && ev.state === "reload") {
+    if (ev.engine_error) engineError = ev.engine_error;
+    running = false; video.pause();
+    if (!switching) watchSwitch(beginSwitch(ev.clock_ms, ev.lang));
+    return;
+  }
+  if (inferenceFailure && ["text", "reset", "state"].includes(ev.type)) return;
   if (transportFailure && ["text", "reset", "state"].includes(ev.type)) return;
   if (ev.type === "info") {
     if (!ev.clock_ms || ev.state === "reload") return;
+    const recovered = !!engineError && ev.engine_error === null;
+    if (ev.engine_error === null) engineError = null;
     const initialInfo = !clock;
     maxAudio = ev.max_audio_s; clock = String(ev.clock_ms); lang = ev.lang; finishSwitch();
     delayTok = Math.max(0, Math.round(ev.delay_ms / ev.clock_ms));   // 160 ms: 3, 80 ms: 6
@@ -757,6 +815,11 @@ function handleEvent(ev) {
                                       : `${ev.clock_ms} ms clock · up to ${ev.max_audio_s} s of audio per run · model load ${ev.init_s} s`;
     if (transportFailure) setState("", "Incomplete");
     else setState(ev.state === "running" ? "running" : "", ev.state === "running" ? "Transcribing" : "Ready");
+    if (recovered) {
+      upMsg("Model reloaded. Press Start when ready.");
+      if (inferenceFailure) $("notice").textContent = "The previous transcript is incomplete. Seek to before the failure and press Start for a new transcription.";
+    }
+    engineControls();
   } else if (ev.type === "reset") {
     if (ev.jump) { insertSeparator(ev.offset_s); resetTranscript(true); } else resetTranscript(false);
   } else if (ev.type === "text") {
@@ -784,6 +847,7 @@ function handleEvent(ev) {
     $("vadChk").checked = ev.enabled;
     if (ev.params) { $("vTh").value = ev.params.threshold; $("vPre").value = ev.params.preroll_s; }
   } else if (ev.type === "loading") {
+    if (!ev.on && ev.reload_required) { failInference(ev.error); return; }
     if (ev.on) {
       running = false; clearInterval(clockTimer); video.pause();
       if (!switching) watchSwitch(beginSwitch(ev.clock_ms, ev.lang));
@@ -811,7 +875,7 @@ es.onmessage = m => handleEvent(JSON.parse(m.data));
 es.onopen = () => { if (transportFailure) stopInterruptedSession(transportFailure.sid); };
 es.onerror = () => {
   if (running) failAudio(sid, audioEpoch, new Error("connection to the board lost"));
-  else if (!transportFailure) setState("", "Disconnected");
+  else if (!transportFailure && !engineError) setState("", "Disconnected");
 };
 
 loadVideos();
