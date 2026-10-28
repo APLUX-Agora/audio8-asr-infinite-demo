@@ -47,13 +47,14 @@ class A8Error(RuntimeError):
 
 
 def _load(library=None):
-    here = os.path.dirname(os.path.abspath(__file__))
-    if library is not None:
-        selected = str(Path(library).expanduser().resolve(strict=True))
+    explicit = library if library is not None else os.environ.get("AUDIO8_ASR_LIB")
+    if explicit is not None:
+        selected = Path(explicit).expanduser().resolve(strict=True)
     else:
-        choices = [Path(here)/"../lib/libaudio8_asr.so", Path(here)/"../build/libaudio8_asr.so"]
-        selected = os.environ.get("AUDIO8_ASR_LIB") or next((str(p) for p in choices if p.is_file()), "libaudio8_asr.so")
-    lib = ctypes.CDLL(selected)
+        selected = Path(__file__).resolve().parent / "lib" / "libaudio8_asr.so"
+        if not selected.is_file():
+            raise OSError("Missing packaged libaudio8_asr.so; install the complete matching SDK with pip")
+    lib = ctypes.CDLL(str(selected))
     P, I, D, F = ctypes.c_void_p, ctypes.c_int, ctypes.c_double, ctypes.POINTER(ctypes.c_float)
     sig = {"a8_version": (ctypes.c_char_p, []), "a8_default_options": (None, [ctypes.POINTER(_Options)]),
            "a8_create": (P, [ctypes.c_char_p, ctypes.POINTER(_Options)]), "a8_create_error": (ctypes.c_char_p, []),
@@ -78,19 +79,22 @@ def _load(library=None):
 def resolve_model_dir(model_dir=None, *, models_root=None):
     """Resolve a package root, never silently replacing an explicit path.
 
-    Defaults are anchored to this checkout, independent of the caller's working directory.
+    Applications may supply models_root for their own checkout; the installed SDK never guesses a project directory.
     A flat package takes precedence; otherwise exactly one immediate child package is required.
     Discovery locates a manifest; package integrity and hardware compatibility are checked separately.
     """
-    if model_dir is not None:
-        raw = os.fspath(model_dir)
+    selected = model_dir if model_dir is not None else os.environ.get("A8_MODELS")
+    if selected is not None:
+        raw = os.fspath(selected)
         if not raw:
             raise A8Error(-2, "empty model package path; pass the directory containing manifest.json")
         path = Path(raw).expanduser().absolute()
         if not (path / "manifest.json").is_file():
             raise A8Error(-2, f"missing manifest.json at {path}; pass the package root, not its parent directory")
         return str(path.resolve())
-    root = Path(models_root) if models_root is not None else Path(__file__).resolve().parents[2] / "models"
+    if models_root is None:
+        raise A8Error(-2, "no model package selected; pass model_dir or set A8_MODELS to the package root")
+    root = Path(models_root)
     root = root.expanduser().absolute()
     if (root / "manifest.json").is_file():
         return str(root.resolve())

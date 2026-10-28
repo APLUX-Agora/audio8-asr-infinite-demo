@@ -3,7 +3,7 @@
 
 One page (static/index.html): the browser plays a video (media/<id>, with sound) and captures its audio itself:
 Web Audio + an AudioWorklet (static/pcm-worklet.js) resample it to 16 kHz PCM16 and POST
-100 ms chunks to /api/audio. The server feeds them into the SDK engine (Python binding in sdk/python/) and pushes the text
+100 ms chunks to /api/audio. The server feeds them into the SDK engine (installed Python SDK) and pushes the text
 back over Server-Sent Events. Pause = no audio = transcription pauses; seeking starts a fresh session at that position.
 
 - Silence gate: Silero VAD (vad_gate.py) between the audio and the engine: the non-speech before the first speech onset
@@ -37,7 +37,6 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-sys.path.insert(0, f"{ROOT}/sdk/python")
 
 import numpy as np  # noqa: E402
 
@@ -649,7 +648,7 @@ def main():
                     help="package root containing manifest.json; default: discover this demo models directory")
     a = ap.parse_args()
     try:
-        MODELS = resolve_model_dir(a.models)
+        MODELS = resolve_model_dir(a.models, models_root=f"{ROOT}/models")
     except A8Error as error:
         ap.error(str(error))
     print(f"[demo] model package: {MODELS}", flush=True)

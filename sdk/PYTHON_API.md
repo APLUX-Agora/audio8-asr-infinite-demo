@@ -1,6 +1,14 @@
 # Python ASR API
 
-Import from this checkout's `sdk/python` directory. This is a breaking Python API revision; use the Python files and native library from the same delivery. Model packages remain local and unchanged. No model is downloaded by `from_pretrained`.
+Install into the interpreter/venv that runs your application. From the Demo repository root:
+
+```bash
+python -m pip install ./sdk
+```
+
+Then `from audio8_asr import ASRModel` works in your own application without `sys.path` changes.
+The package includes the matched native SDK 0.7.0; Python distribution version is `0.7.0.post1`.
+Use Python, native library and models from compatible deliveries. No model is downloaded by `from_pretrained`.
 
 ## Quick start
 
@@ -12,7 +20,7 @@ with ASRModel.from_pretrained("models/qnn248_qcs8550") as model:
     print(result.text, result.finish_reason)
 ```
 
-`model_dir=None` discovers this checkout's flat model package or unique immediate child package. Multiple packages require an explicit package root containing `manifest.json`. Explicit paths and `library=` select exactly those files; failures do not fall back to another package or library.
+Pass a package root containing `manifest.json`, or set `A8_MODELS` to that root. Without either, the installed SDK reports a missing selection; it does not search near `site-packages`. Demo launchers/examples separately discover their checkout's flat or unique immediate child package. Multiple packages require explicit selection. Explicit paths and `library=` select exactly those files; failures do not fall back to another package or library.
 
 ## Transcription
 

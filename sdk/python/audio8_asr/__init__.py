@@ -9,10 +9,10 @@ import signal
 import threading
 
 import numpy as np
-from _audio8_stream_native import (_Native, A8Error, resolve_model_dir, installed_clocks,
+from ._native import (_Native, A8Error, resolve_model_dir, installed_clocks,
                                     extra_file, _manifest)
-from audio8_asr_audio import prepare_audio, mono, rate, StreamingResampler
-from audio8_asr_types import (ASRCapabilities, ASRError, ASRLoadError, ASRInferenceError,
+from .audio import prepare_audio, mono, rate, StreamingResampler
+from .types import (ASRCapabilities, ASRError, ASRLoadError, ASRInferenceError,
                        ASRStateError, ASRUnsupportedError, HotwordConfig,
                        TranscriptionResult, TranscriptionUpdate,
                        generation_limit, hotword_config)

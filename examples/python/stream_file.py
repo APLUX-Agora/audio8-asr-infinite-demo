@@ -26,7 +26,7 @@ import time
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path[:0] = [os.path.join(ROOT, "sdk", "python"), os.path.join(ROOT, "demo"), os.path.dirname(os.path.abspath(__file__))]
+sys.path.insert(0, os.path.join(ROOT, "demo"))
 from audio8_asr import ASRModel, A8Error, extra_file, resolve_model_dir  # noqa: E402
 from reset_policy import ResetPolicy  # noqa: E402
 from transcribe_file import SR, load_audio  # noqa: E402
@@ -51,7 +51,7 @@ def main():
     ap.add_argument("--plain", action="store_true", help="no silence gate and no soft-reset policy (the bare engine)")
     a = ap.parse_args()
     try:
-        a.models = resolve_model_dir(a.models)
+        a.models = resolve_model_dir(a.models, models_root=os.path.join(ROOT, "models"))
     except A8Error as error:
         ap.error(str(error))
     print(f"[example] model package: {a.models}", file=sys.stderr)

@@ -151,12 +151,19 @@ with attribution retained. See [source, license and changes](../docs/MEDIA_ATTRI
 
 Expand Hotwords, enable the checkbox and enter comma- or newline-separated words/phrases. Default is off and the word list is empty. Changes apply on the next Start or seek, not halfway through the current session. Advanced controls expose top-k and first/continuation boosts. Prefer a short list relevant to the content; ordinary words can be changed incorrectly.
 
-SDK0.6.1 and current ModelFarm packages include the matching optional tokenizer.json. The SDK resolves
-manifest extras.tokenizer or the package-root file automatically. A8_TOKENIZER may override it with the
-matching explicit file. No tokenizer or system ICU installation is needed while hotwords remain disabled.
+SDK 0.7.0 and current Hugging Face packages include the matching optional tokenizer.json. The SDK resolves
+manifest extras.tokenizer or the package-root file automatically. No tokenizer or system ICU installation is needed while hotwords remain disabled.
 See the [Python API](../sdk/PYTHON_API.md)
 for limits and behavior.
 
 ## Server shutdown
 
 SIGTERM and SIGINT stop the server and wait for the synchronous inference worker to finish before closing the native engine. New sessions are rejected during shutdown. The same cleanup runs when the HTTP port cannot be bound after model initialization.
+
+## Installed Python SDK
+
+The repository-root `requirements.txt` installs `./sdk` into this Demo's selected `.venv`.
+Web and Python examples import that installed package, without adding SDK source directories to
+`sys.path`. The package includes the same precompiled SDK 0.7.0; its Python distribution version
+is 0.7.0.post1. The launcher still discovers this checkout's `models/` or uses `--models` / `A8_MODELS`.
+Model/runtime setup remains separate; see [Python installation](../sdk/PYTHON_PACKAGE.md).

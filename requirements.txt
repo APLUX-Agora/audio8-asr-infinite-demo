@@ -1,6 +1,3 @@
-# Python packages for the SDK, examples and Web Demo; supported CPython: 3.10, 3.11, 3.12.
-# Verified on QCS8550 / Ubuntu 22.04; use the selected interpreter's project venv.
-numpy>=1.22
-soundfile>=0.12      # reading audio files (examples)
-scipy>=1.8           # resampling audio files that are not 16 kHz (examples)
-onnxruntime>=1.16    # Silero VAD silence gate (web demo, examples/python/stream_file.py)
+# Run from this repository root in the selected project venv (CPython 3.10/3.11/3.12).
+./sdk
+onnxruntime>=1.16    # Web/streaming-example silence gate; not an SDK dependency

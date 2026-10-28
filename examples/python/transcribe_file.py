@@ -7,9 +7,8 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "sdk/python"))
-from audio8_asr import ASRModel, HotwordConfig
-from audio8_asr_audio import prepare_audio
+from audio8_asr import ASRModel, HotwordConfig, resolve_model_dir
+from audio8_asr.audio import prepare_audio
 from example_lifecycle import managed_engine, ExampleInterrupted
 
 SR = 16000
@@ -34,7 +33,7 @@ def main():
     a = ap.parse_args()
     hints = HotwordConfig(tuple(a.hotword), a.hotword_top_k,
                           a.hotword_start_boost, a.hotword_continuation_boost)
-    with managed_engine(ASRModel.from_pretrained, a.models, clock_ms=a.clock_ms) as (model, check):
+    with managed_engine(ASRModel.from_pretrained, resolve_model_dir(a.models, models_root=ROOT / "models"), clock_ms=a.clock_ms) as (model, check):
         check()
         start = time.monotonic()
         result = model.transcribe(a.audio, language=a.lang, hotwords=hints,

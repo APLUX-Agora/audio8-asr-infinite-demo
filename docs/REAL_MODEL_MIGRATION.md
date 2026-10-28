@@ -8,14 +8,13 @@ The Pandora page slug remains `live-transcribe-01`; historical repositories and 
 ## Current Python API: SDK 0.7.0
 
 The old `Engine` interface and identity-renamed Python aliases are not provided by the current SDK.
-Add this checkout's `sdk/python` directory to your Python import path, then use `ASRModel`:
+Install the SDK into your application's venv, then use `ASRModel`:
+
+```bash
+python -m pip install /path/to/audio8-asr-infinite-demo/sdk
+```
 
 ```python
-from pathlib import Path
-import sys
-
-# Run from the Demo repository root.
-sys.path.insert(0, str(Path("sdk/python").resolve()))
 from audio8_asr import ASRModel
 
 with ASRModel.from_pretrained("models/qnn248_qcs8550") as model:
@@ -24,8 +23,8 @@ with ASRModel.from_pretrained("models/qnn248_qcs8550") as model:
 ```
 
 Use [Python API](../sdk/PYTHON_API.md) for inputs, streaming, results, errors and explicit resource ownership.
-`from_pretrained` loads a local package; it does not download models. Use matching Python modules,
-header and native library from the same delivery. No old `Engine` alias is retained.
+`from_pretrained` loads a local package; it does not download models. Use matching installed Python package,
+header and native library from compatible deliveries. No old `Engine` alias is retained.
 
 ## Native interface naming
 

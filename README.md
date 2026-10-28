@@ -25,6 +25,9 @@ DEMO_PYTHON=python3.10  # Or python3.11 / python3.12; choose one installed inter
 .venv/bin/python -m pip check
 ```
 
+`requirements.txt` also installs the matched Python SDK into this Demo's `.venv`.
+For integration in another application, see [SDK installation](sdk/PYTHON_PACKAGE.md).
+
 ## 2. Get the model
 
 From the repository root, download only the **160ms / QCS8550** package from

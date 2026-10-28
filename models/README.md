@@ -76,8 +76,8 @@ PACKAGE=qnn248_qcs8550  # Select your board's directory.
 (cd "models/$PACKAGE" && sha256sum -c SHA256SUMS)
 ```
 
-Its package has `80ms/` instead of `160ms/`. One installed package is discovered automatically
-by the SDK, Python examples and Web Demo.
+Its package has `80ms/` instead of `160ms/`. The Python examples and Web Demo discover one
+package in their checkout automatically. Independent SDK callers pass a package root or set `A8_MODELS`.
 
 ## Keep both models
 

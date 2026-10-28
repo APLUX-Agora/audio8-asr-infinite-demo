@@ -8,3 +8,7 @@ __pycache__/
 models/*
 !models/README.md
 demo/media/uploads/
+
+*.egg-info/
+/sdk/dist/
+/dist/
