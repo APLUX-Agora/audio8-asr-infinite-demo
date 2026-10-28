@@ -72,7 +72,7 @@ Use the declarations and field comments in the header as the exact layout; do no
 | `a8_options` | `clock_ms`: 160(default)/80; `lang`: A8_LANG_ZH(default)/A8_LANG_EN; `roll_s`: 28.8 seconds(default), 0 disables rolling; `stable_rows`: -1 selects default, otherwise valid retained cache rows; `semantic_vad`: 1(default)/0; `replay_max_s`: 10 seconds(default), nonnegative and within the context/replay budget. |
 | `a8_token` | `id` int32; `is_text` int32 flag; `audio_t` float seconds from session start excluding synthetic padding; `eot[4]` no-speech probabilities at 0.5/1/2/3 seconds, zero when disabled. EOS is not emitted. |
 | `a8_info` | Sampling rate, samples/clock, clock/language, four horizon seconds, delay-token count, pad ID, default tail clocks and rolling seconds. Read after creation; use `samples_per_token/sampling_rate` for clock duration. |
-| `a8_stats` | Audio seconds; emitted token count; absolute LM position; trim/reset counts; cumulative stage milliseconds. Full field names and integer widths are in the header and [Python result reference](PYTHON_API.md#results-and-attributes). |
+| `a8_stats` | Audio seconds; emitted token count; absolute LM position; trim/reset counts; cumulative stage milliseconds. Full field names, integer widths and units are defined in [the public header](include/audio8_asr.h). Python `stats()` returns a copy of these diagnostic fields; task results are documented under [Transcription](PYTHON_API.md#transcription). |
 
 Do not change an engine's creation options in-place. Use the package for the selected clock/SoC. The 80ms and
 160ms resources remain independent, with complete manifests and checksums; see [model placement](../models/README.md).
@@ -80,7 +80,21 @@ Do not change an engine's creation options in-place. Use the package for the sel
 ## Function reference
 
 Functions returning `int` use a nonnegative success/count and negative `A8_ERR_*` errors unless noted.
-Read `a8_last_error(engine)` immediately on failure; Python error-code meanings are listed in [Errors](PYTHON_API.md#errors).
+Read `a8_last_error(engine)` immediately on failure. The header defines these native status codes:
+
+| Code | Name | Meaning |
+| --- | --- | --- |
+| `0` | `A8_OK` | Success; count-returning calls can also return positive values. |
+| `-1` | `A8_ERR_ARG` | Invalid argument. |
+| `-2` | `A8_ERR_MODEL` | Missing or inconsistent model resource. |
+| `-3` | `A8_ERR_NPU` | AidLite/QNN execution failure. |
+| `-4` | `A8_ERR_FULL` | Language-model KV capacity exhausted when rolling is disabled. |
+| `-5` | `A8_ERR_STATE` | Operation is invalid in the current session state. |
+| `-6` | `A8_ERR_INTERNAL` | Unexpected native failure, such as allocation failure. |
+
+Python task exceptions have their own categories and retain `native_code` where available;
+see [Capabilities and errors](PYTHON_API.md#capabilities-and-errors). A native inference failure
+requires closing and recreating the Python model; do not assume that a new request recovers it.
 
 | Function | Parameters and result |
 | --- | --- |
@@ -108,9 +122,12 @@ Normal stdout is transcript UTF-8 bytes plus a newline. Diagnostics go to stderr
 
 ## Compatibility
 
-One SDK0.6.1 binary passed Ubuntu22.04/24.04/26.04 arm64 userspace checks; existing actual NPU coverage is
-QCS8550/Ubuntu22.04/160ms. That is not a claim of NPU/BSP validation on24.04/26.04 or every resource target.
-Keep model, runtime and SDK versions matched; do not infer hardware compatibility from the folder name alone.
+The delivered SDK is **0.7.0**. Current NPU qualification covers QCS8550 / Ubuntu 22.04 / 160ms.
+CPython 3.10, 3.11 and 3.12 were verified within that environment. Other clocks, SoCs and
+Ubuntu releases require their own qualification before broader claims.
+Historical SDK 0.6.1 userspace checks on Ubuntu 22.04/24.04/26.04 do not qualify the new 0.7.0 binary.
+AidLite/QNN and the board BSP remain external platform requirements. Keep the model, runtime and
+SDK versions matched; see [SDK environment and support](README.md).
 
 ## SDK 0.7.0 request controls
 

@@ -1,27 +1,56 @@
-# Real-model delivery migration
+# Model and API migration
 
-Audio8-ASR-Infinite-80ms and Audio8-ASR-Infinite-160ms are two model resources with separate private HF repositories under APLUX-GenAI4. QNN versions and SoCs are directory dimensions, for example `qnn248_qcs8550/`. The new GitHub delivery target is the private repository `APLUX-Pandora/audio8-asr-infinite-demo`, shared by both models. The historical GitHub repository `APLUX-Pandora/live-transcribe-01` is retained without overwriting its delivery. The Pandora page slug remains `live-transcribe-01`.
+Audio8-ASR-Infinite-80ms and Audio8-ASR-Infinite-160ms have separate Hugging Face repositories
+under APLUX-Pandora. QNN version and SoC are package-directory dimensions, such as
+`qnn248_qcs8550/`. Both models use the same [SDK and Demo repository](https://github.com/APLUX-Pandora/audio8-asr-infinite-demo).
+The Pandora page slug remains `live-transcribe-01`; historical repositories and tags retain their original content.
 
-## Interface change
+## Current Python API: SDK 0.7.0
 
-| Old delivery | Unified real-model delivery |
-|---|---|
+The old `Engine` interface and identity-renamed Python aliases are not provided by the current SDK.
+Add this checkout's `sdk/python` directory to your Python import path, then use `ASRModel`:
+
+```python
+from pathlib import Path
+import sys
+
+# Run from the Demo repository root.
+sys.path.insert(0, str(Path("sdk/python").resolve()))
+from audio8_asr import ASRModel
+
+with ASRModel.from_pretrained("models/qnn248_qcs8550") as model:
+    result = model.transcribe("examples/audio/jobs_keynote_10min_16k.flac", language="en")
+    print(result.text, result.finish_reason)
+```
+
+Use [Python API](../sdk/PYTHON_API.md) for inputs, streaming, results, errors and explicit resource ownership.
+`from_pretrained` loads a local package; it does not download models. Use matching Python modules,
+header and native library from the same delivery. No old `Engine` alias is retained.
+
+## Native interface naming
+
+| Historical delivery | Current delivery |
+| --- | --- |
 | `liblive_transcribe_01.so` | `libaudio8_asr.so` |
 | `live_transcribe_01.h` | `audio8_asr.h` |
-| `from live_transcribe_01 import Engine, LT01Error` | `from audio8_asr import Engine, A8Error` |
 | `lt01_*` C ABI | `a8_*` C ABI |
 | `LT01_*` macros and Demo settings | `A8_*` |
 | `LIVE_TRANSCRIBE_01_LIB` | `AUDIO8_ASR_LIB` |
 
-This naming change is incompatible with old consumers. Use the matching header, Python module and library together. Old tags are preserved. The SDK no longer builds an identity-renaming forwarding layer; the source, header, Python binding and library use the same names.
+SDK 0.7.0 preserves existing real-name C ABI signatures and adds per-request language, token-budget
+and final-audio controls. See [native integration](../sdk/NATIVE_INTEGRATION.md).
+The old identity-renamed ABI is historical; do not mix files across the naming or Python API boundary.
 
 ## Model resources
 
-- `APLUX-GenAI4/Audio8-ASR-Infinite-80ms`
-- `APLUX-GenAI4/Audio8-ASR-Infinite-160ms`
+- [APLUX-Pandora/Audio8-ASR-Infinite-160ms](https://huggingface.co/APLUX-Pandora/Audio8-ASR-Infinite-160ms)
+- [APLUX-Pandora/Audio8-ASR-Infinite-80ms](https://huggingface.co/APLUX-Pandora/Audio8-ASR-Infinite-80ms)
 
-Each repository is private and contains complete packages by QNN/SoC directory, manifests, checksums, tokenizer and applicable licenses. No HF README/model card is added. Graph, quantization, tensor and prefix bytes are preserved. Existing source model resources and old repository history are retained.
+Follow [model setup](../models/README.md) to download a complete SoC package at a fixed revision
+and check its SHA256SUMS. Packages retain manifests, tokenizer, shared tensors, prefix caches,
+applicable licenses and a brief README linking to GitHub. Full SDK/API/example/Web instructions
+are maintained in the GitHub repository.
 
-The workflow verifies HF privacy, exact revisions and file completeness. CMS editing and mms availability are out of scope. GitHub delivers the shared SDK, examples, Web Demo and public README; it does not carry the C++ inference implementation or private release evidence.
-
-Older tags retain their original SDK. Do not mix interface files or libraries across the naming boundary.
+The resource migration preserves accepted model bytes. SDK 0.7.0 uses the existing single-file
+prefix-cache layout; old 0.4.x per-layer packages are incompatible. The API and package must be
+validated together for the target board/runtime; changing a repository name does not qualify a new platform.

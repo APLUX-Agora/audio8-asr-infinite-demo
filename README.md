@@ -17,7 +17,7 @@ Choose one installed CPython interpreter: **3.10, 3.11 or 3.12**. All three were
 ```bash
 git clone https://github.com/APLUX-Pandora/audio8-asr-infinite-demo.git
 cd audio8-asr-infinite-demo
-sudo aid-pkg install aidlite-sdk aidlite-qnn248 aid-mms
+sudo aid-pkg install aidlite-sdk aidlite-qnn248
 sudo apt install ffmpeg libsndfile1 python3-venv
 DEMO_PYTHON=python3.10  # Or python3.11 / python3.12; choose one installed interpreter.
 "$DEMO_PYTHON" -m venv .venv
@@ -27,23 +27,19 @@ DEMO_PYTHON=python3.10  # Or python3.11 / python3.12; choose one installed inter
 
 ## 2. Get the model
 
-From the repository root, download the **160ms / QCS8550** model into `models/`:
+From the repository root, download only the **160ms / QCS8550** package from
+[Hugging Face](https://huggingface.co/APLUX-Pandora/Audio8-ASR-Infinite-160ms) into `models/`:
 
 ```bash
-mms login
-mms list Audio8-ASR-Infinite
-mms get -m Audio8-ASR-Infinite-160ms -p w4a16 -c qcs8550 -b qnn2.48 -d models
-```
-
-If MMS returns an archive, extract it under `models/`. The installed package should have
-`models/qnn248_qcs8550/manifest.json`. Verify it before running:
-
-```bash
+.venv/bin/python -m pip install huggingface_hub
+.venv/bin/hf download APLUX-Pandora/Audio8-ASR-Infinite-160ms \
+  --revision ce6c6a646e962b75640bfba20e97bffeb4928b06 \
+  --include "qnn248_qcs8550/**" --local-dir models
 (cd models/qnn248_qcs8550 && sha256sum -c SHA256SUMS)
 ```
 
-For another chip, the 80ms model or extraction details, see [model setup](models/README.md).
-MMS selectors are prepared for publication; the catalog entry and download have not been verified.
+The download preserves `models/qnn248_qcs8550/manifest.json`; no extraction is needed.
+For another SoC, the 80ms model or multiple installed packages, see [model setup](models/README.md).
 
 ## 3. Run the Web Demo
 

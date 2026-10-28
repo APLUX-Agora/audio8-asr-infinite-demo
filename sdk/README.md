@@ -9,7 +9,7 @@ There is no second SDK or separate C++ inference implementation.
 - SDK version: **0.7.0**.
 - Library SHA256: `21d8381b323f6a4f341363892a65ff9904568f879e3c5174d59c9aba1f43cc67`.
 - Platform: Linux AArch64, AidLite/QNN2.48 and matching board BSP/driver.
-- Current ModelFarm packages contain single-file prefix caches and the optional matching hotword tokenizer.
+- Current Hugging Face model packages contain single-file prefix caches and the optional matching hotword tokenizer.
 - ICU70.1 code and Unicode data are embedded; no system ICU installation is required.
 
 ## Compatibility
