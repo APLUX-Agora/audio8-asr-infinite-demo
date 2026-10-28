@@ -1,3 +1,5 @@
+> Integration candidate 0.7.2.dev1 / native 0.7.2-dev; this is not a formal SDK release.
+
 # Audio8-ASR-Infinite SDK
 
 The prebuilt `lib/libaudio8_asr.so` and [C ABI header](include/audio8_asr.h) are shared by Python and C/C++ callers.
@@ -6,8 +8,8 @@ Use the [Python API reference](PYTHON_API.md) for every method/result and the
 [Runnable examples](../examples/README.md) include Python file/stream programs and one C++ WAV program.
 There is no second SDK or separate C++ inference implementation.
 
-- SDK version: **0.7.1**.
-- Library SHA256: `c5a6530e889dcb3eb87af7f5371ee317296e79e0e119569d6fedf3213a182e87`.
+- SDK version: **0.7.2-dev**.
+- Library SHA256: `169f92c773426d96f9617904aa7f98e2ec7f139d542db754c6e5ae9896b206e4`.
 - Platform: Linux AArch64, AidLite/QNN2.48 and matching board BSP/driver.
 - Current Hugging Face model packages contain single-file prefix caches and the optional matching hotword tokenizer.
 - ICU70.1 code and Unicode data are embedded; no system ICU installation is required.
@@ -65,3 +67,7 @@ portions keep their own terms. See [licensing scope](../LICENSING.md),
 
 预编译 `.so` 中阿加犀专有部分采用 Pandora 自有许可，业务层 Apache-2.0 不覆盖这些专有部分；
 阿加犀的 C 头文件、Python 绑定仍为 Apache-2.0，第三方部分保留各自许可。
+
+## models.json integration candidate
+
+Python package 0.7.2.dev1 contains native 0.7.2-dev. This is an integration candidate, not a formal SDK release. Pass the package root containing models.json; legacy manifest formats remain supported. See [model setup](../../models/README.md) and [candidate contract](MODEL_PACKAGE.md).

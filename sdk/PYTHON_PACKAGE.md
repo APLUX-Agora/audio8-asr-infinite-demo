@@ -16,7 +16,7 @@ From your own application, with no repository import-path changes:
 ```python
 from audio8_asr import ASRModel
 
-with ASRModel.from_pretrained("/path/to/package-containing-manifest") as model:
+with ASRModel.from_pretrained("/path/to/package-containing-models-json") as model:
     result = model.transcribe("speech.wav", language="en")
     print(result.text, result.finish_reason)
 ```
@@ -29,3 +29,7 @@ See the [repository](https://github.com/APLUX-Pandora/audio8-asr-infinite-demo) 
 the full Python API, C ABI integration, examples and the Web Demo. Python bindings are Apache-2.0;
 APLUX proprietary parts of the bundled native library use the Pandora Model and SDK License.
 Applicable upstream and third-party terms remain in the included notices and licenses.
+
+## Root models.json integration candidate
+
+Candidate 0.7.2.dev1 (native 0.7.2-dev) adds the flat HF package entry point. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.

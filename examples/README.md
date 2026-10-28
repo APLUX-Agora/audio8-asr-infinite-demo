@@ -67,3 +67,7 @@ Audio conversion is public Python code; inference remains in the same native lib
 With80ms and160ms installed, keep independent package roots and explicitly pass `--models` to every example.
 Changing a package path does not prove chip compatibility. Preserve package checksums/licenses and use a qualified
 SDK/runtime pair. Example output/performance is input/platform dependent; no fixed latency is promised.
+
+## Root models.json integration candidate
+
+Candidate 0.7.2.dev1 (native 0.7.2-dev) adds the flat HF package entry point. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](../sdk/MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.

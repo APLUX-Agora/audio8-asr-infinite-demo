@@ -10,12 +10,14 @@ Streaming speech recognition on Qualcomm devices, powered by Edge0's [Audio8-ASR
 
 Source: Lorna Mitchell, FOSDEM 2025, **CC BY 2.0 BE**. Original credits are retained; the excerpt is trimmed and transcoded. [Source, license and changes](docs/MEDIA_ATTRIBUTION.md).
 
+> Integration candidate 0.7.2.dev1: exercises the new models.json resource layout; this is not a formal SDK release.
+
 ## 1. Install
 
 Choose one installed CPython interpreter: **3.10, 3.11 or 3.12**. All three were verified on QCS8550 / Ubuntu 22.04 AArch64 with the same SDK and model package. The selected interpreter must provide the `venv` module; the `python3-venv` package supplies it for Ubuntu's default Python. Validation used the 160ms model; see [SDK compatibility](sdk/README.md#compatibility).
 
 ```bash
-git clone https://github.com/APLUX-Pandora/audio8-asr-infinite-demo.git
+git clone --branch codex/audio8-models-json https://github.com/APLUX-Pandora/audio8-asr-infinite-demo.git
 cd audio8-asr-infinite-demo
 sudo aid-pkg install aidlite-sdk aidlite-qnn248
 sudo apt install ffmpeg libsndfile1 python3-venv
@@ -30,20 +32,18 @@ For integration in another application, see [SDK installation](sdk/PYTHON_PACKAG
 
 ## 2. Get the model
 
-From the repository root, download only the **160ms / QCS8550** package from
-[Hugging Face](https://huggingface.co/APLUX-Pandora/Audio8-ASR-Infinite-160ms) into `models/`:
+Download common resources and the **160ms / QCS8550** target into the same `models/` directory:
 
 ```bash
 .venv/bin/python -m pip install huggingface_hub
-.venv/bin/hf download APLUX-Pandora/Audio8-ASR-Infinite-160ms \
-  --revision e11f29f8676be2668249f44d54db0ecc57f546b1 \
-  --include "shared/**" "qnn248_qcs8550/**" --local-dir models
-(cd models/shared && sha256sum -c SHA256SUMS)
-(cd models/qnn248_qcs8550 && sha256sum -c SHA256SUMS)
+REPO=APLUX-Pandora/Audio8-ASR-Infinite-160ms
+REV=03a93fff6ce4993a701d8c172261355cbe6f1217
+.venv/bin/hf download "$REPO" --revision "$REV" --local-dir models --exclude "targets/*"
+.venv/bin/hf download "$REPO" --revision "$REV" --local-dir models --include "targets/qcs8550_qnn248/*"
 ```
 
-The download preserves `models/qnn248_qcs8550/manifest.json` and the sibling `models/shared/` data; no extraction is needed. Silero VAD is bundled with the Demo.
-For another SoC, the 80ms model or multiple installed packages, see [model setup](models/README.md).
+The package entry point is `models/models.json`. Other SoC graphs are not downloaded.
+Silero VAD is bundled with the Demo. For other SoCs, 80ms and version compatibility, see [model setup](models/README.md).
 
 ## 3. Run the Web Demo
 

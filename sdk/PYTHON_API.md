@@ -7,7 +7,7 @@ python -m pip install ./sdk
 ```
 
 Then `from audio8_asr import ASRModel` works in your own application without `sys.path` changes.
-The package includes the matched native SDK 0.7.1; Python distribution version is `0.7.1`.
+This integration candidate includes native SDK 0.7.2-dev; Python distribution version is `0.7.2.dev1`. It is not a formal release.
 Use Python, native library and models from compatible deliveries. No model is downloaded by `from_pretrained`.
 
 ## Quick start
@@ -15,12 +15,12 @@ Use Python, native library and models from compatible deliveries. No model is do
 ```python
 from audio8_asr import ASRModel
 
-with ASRModel.from_pretrained("models/qnn248_qcs8550") as model:
+with ASRModel.from_pretrained("models") as model:
     result = model.transcribe("speech.wav")
     print(result.text, result.finish_reason)
 ```
 
-Pass a package root containing `manifest.json`, or set `A8_MODELS` to that root. Without either, the installed SDK reports a missing selection; it does not search near `site-packages`. Demo launchers/examples separately discover their checkout's flat or unique immediate child package. Multiple packages require explicit selection. Explicit paths and `library=` select exactly those files; failures do not fall back to another package or library.
+Pass a package root containing `models.json` (or a legacy `manifest.json`), or set `A8_MODELS` to that root. Without either, the installed SDK reports a missing selection; it does not search near `site-packages`. Demo launchers/examples separately discover their checkout's flat or unique immediate child package. Multiple packages require explicit selection. Explicit paths and `library=` select exactly those files; failures do not fall back to another package or library.
 
 ## Transcription
 
@@ -71,7 +71,7 @@ Requires native SDK **0.7.0** with request-language, budget and final-audio cont
 ## Live streaming
 
 ```python
-with ASRModel.from_pretrained("models/qnn248_qcs8550") as model:
+with ASRModel.from_pretrained("models") as model:
     with model.create_stream(sample_rate=48000, channels=2, language="en") as stream:
         for pcm_chunk in microphone_chunks:  # float, (samples, 2), original source rate
             update = stream.feed(pcm_chunk)
@@ -88,3 +88,11 @@ with ASRModel.from_pretrained("models/qnn248_qcs8550") as model:
 `finish()` returns the complete `TranscriptionResult`; subsequent calls return that cached object. It drains once, never reruns inference. A normal complete result requires known EOF and all native/converter tails drained. Empty recordings fail. Closing early abandons pending input without fabricating normal completion or flushing extra inference. Results already returned remain valid after closing.
 
 Advanced integrations can inspect `stream.last_tokens` (copied token ID/is_text/audio_t/EOT records), `token_bytes(id)`, `text_of(ids)`, `eot_probs()`, `info`, `stats()`, `clock_s`, and `samples_per_token`. `soft_reset(replay_from_s)` replays cached rows and returns copied replay tokens; those tokens are appended to the stream snapshot. Applications using replay own endpoint/timestamp/presentation policy; the Web demo's ResetPolicy remains outside inference. These controls are model-specific and are not required for ordinary transcription.
+
+## Root models.json integration candidate
+
+Candidate 0.7.2.dev1 (native 0.7.2-dev) adds the flat HF package entry point. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.
+
+### Package resource inspection
+
+`model_files(model_dir, clock_ms)` returns a fresh dictionary of runtime role names to package-root-relative file paths. It performs new-index schema/path/target completeness checks without loading a native library; it does not hash resources or identify board hardware. `installed_clocks(model_dir)` reports the selected package clock. Web preflight uses the same resource paths for SHA256SUMS checks.

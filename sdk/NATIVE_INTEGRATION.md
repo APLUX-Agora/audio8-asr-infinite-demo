@@ -46,7 +46,7 @@ The SDK `.so` itself has no RPATH/RUNPATH. Use `ldd` on the target to diagnose m
 ## Ownership and call order
 
 1. Fill `a8_options` using `a8_default_options`, then set the desired clock/language and supported options.
-2. Call `a8_create` with a directory directly containing the matching manifest. `NULL` means failure; immediately
+2. Call `a8_create` with a directory directly containing models.json (or a supported legacy manifest.json). `NULL` means failure; immediately
    read `a8_create_error()` (thread-local). No engine may be used on failure.
 3. Call `a8_reset` for the session; optionally configure hotwords before feeding audio.
 4. Feed audio and drain all queued tokens. Calls are synchronous, and one engine is used by one thread at a time.
@@ -140,3 +140,7 @@ These additive C ABI functions underpin the new Python task API. Existing C call
 | `a8_finish_audio(e, const float *pcm, int n, int tail_tokens)` | Append final finite model-rate mono PCM and declare EOF before running remaining work/tails. Same PCM/ownership contract as feed; `n>=0`, pointer required when `n>0`; `tail_tokens=-1` uses native default. Returns count of queued tokens or negative error. Drain with `a8_read_tokens`. Unlike feed followed by finish, this preserves normal completion when the cap equals the precise final workload. |
 
 After a live `a8_feed` exhausts the cap, state is terminal `2`; do not call native finish again. A new request must begin/reset before more audio. A finite final-audio call returns state `1` if all required clocks finish exactly at the cap, or `2` if the cap blocks required work. No text slicing implements this budget. `a8_reset` restores the currently selected language and the original uncapped legacy session behavior. Language switching changes only existing prefix/cache state, not weights. All calls remain synchronous and must not race destroy. The Python layer additionally reserves one recording and caches its idempotent finish result; raw C finish is still once-only.
+
+## Root models.json integration candidate
+
+Candidate 0.7.2.dev1 (native 0.7.2-dev) adds the flat HF package entry point. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.

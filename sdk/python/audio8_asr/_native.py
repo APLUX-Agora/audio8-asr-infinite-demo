@@ -87,19 +87,19 @@ def resolve_model_dir(model_dir=None, *, models_root=None):
     if selected is not None:
         raw = os.fspath(selected)
         if not raw:
-            raise A8Error(-2, "empty model package path; pass the directory containing manifest.json")
+            raise A8Error(-2, "empty model package path; pass the directory containing models.json or manifest.json")
         path = Path(raw).expanduser().absolute()
-        if not (path / "manifest.json").is_file():
-            raise A8Error(-2, f"missing manifest.json at {path}; pass the package root, not its parent directory")
+        if not any((path / name).is_file() for name in ("models.json", "manifest.json")):
+            raise A8Error(-2, f"missing manifest.json or models.json at {path}; pass the package root, not its parent directory")
         return str(path.resolve())
     if models_root is None:
         raise A8Error(-2, "no model package selected; pass model_dir or set A8_MODELS to the package root")
     root = Path(models_root)
     root = root.expanduser().absolute()
-    if (root / "manifest.json").is_file():
+    if any((root / name).is_file() for name in ("models.json", "manifest.json")):
         return str(root.resolve())
     try:
-        candidates = sorted(p for p in root.iterdir() if p.is_dir() and (p / "manifest.json").is_file())
+        candidates = sorted(p for p in root.iterdir() if p.is_dir() and any((p / name).is_file() for name in ("models.json", "manifest.json")))
     except OSError:
         candidates = []
     if len(candidates) == 1:
@@ -112,6 +112,12 @@ def resolve_model_dir(model_dir=None, *, models_root=None):
 
 
 def _manifest(model_dir):
+    if (Path(model_dir) / "models.json").is_file():
+        from ._package import inspect
+        try:
+            return inspect(model_dir)
+        except ValueError as error:
+            raise A8Error(-2, str(error)) from error
     try:
         with open(os.path.join(model_dir, "manifest.json"), encoding="utf-8") as f:
             return json.load(f)
@@ -132,6 +138,15 @@ def installed_clocks(model_dir=None):
     model_dir = resolve_model_dir(model_dir)
     clocks = _manifest(model_dir).get("clocks", {})
     return [c for c in (160, 80) if str(c) in clocks and os.path.exists(os.path.join(model_dir, clocks[str(c)]["config"]))]
+
+
+def model_files(model_dir, clock_ms):
+    """Return package-root-relative runtime file paths for one installed audio clock."""
+    model_dir = resolve_model_dir(model_dir)
+    clocks = _manifest(model_dir).get("clocks", {})
+    if str(clock_ms) not in clocks:
+        raise A8Error(-2, "audio clock is not installed")
+    return dict(clocks[str(clock_ms)])
 
 
 class _Native:

@@ -42,7 +42,7 @@ def main():
                     help="audio clock: 160 or 80 ms; default: the installed one (160 first)")
     ap.add_argument("--lang", default="en", choices=["en", "zh"], help="language spoken in the audio")
     ap.add_argument("--models", default=os.environ.get("A8_MODELS"),
-                    help="package root containing manifest.json; default: discover this demo models directory")
+                    help="package root containing models.json or legacy manifest.json; default: discover this demo models directory")
     ap.add_argument("--chunk-ms", type=int, default=80, help="audio delivered per chunk (like a microphone buffer)")
     ap.add_argument("--eot-horizon", type=float, default=2.0, choices=[0.5, 1.0, 2.0, 3.0],
                     help="end of turn = P(no speech within this many seconds)")

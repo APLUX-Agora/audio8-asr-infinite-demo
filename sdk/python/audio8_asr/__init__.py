@@ -10,7 +10,7 @@ import threading
 
 import numpy as np
 from ._native import (_Native, A8Error, resolve_model_dir, installed_clocks,
-                                    extra_file, _manifest)
+                                    extra_file, model_files, _manifest)
 from .audio import prepare_audio, mono, rate, StreamingResampler
 from .types import (ASRCapabilities, ASRError, ASRLoadError, ASRInferenceError,
                        ASRStateError, ASRUnsupportedError, HotwordConfig,

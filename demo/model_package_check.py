@@ -84,6 +84,25 @@ class PackageVerifier:
         """None for a complete verified clock; otherwise a safe, package-relative reason."""
         with self._lock:
             try:
+                if (self.root / 'models.json').is_file():
+                    from audio8_asr import model_files, extra_file
+                    try:
+                        layout = model_files(self.root, int(clock))
+                    except RuntimeError as exc:
+                        raise ValueError(str(exc)) from exc
+                    names = set(layout.values()) | {'models.json'}
+                    tokenizer = extra_file(self.root, 'tokenizer')
+                    if tokenizer:
+                        names.add(str(Path(tokenizer).relative_to(self.root)))
+                    sums = self._checksums()
+                    for name in sorted(names):
+                        self.relative(name)
+                        if not (self.root / name).resolve().is_relative_to(self.root.resolve()):
+                            raise ValueError('model resource escapes package root: ' + name)
+                        if name not in sums:
+                            raise ValueError('no checksum for model file: ' + name)
+                        self._verify(name, sums[name])
+                    return None
                 manifest = self._document('manifest.json')
                 if not isinstance(manifest, dict) or manifest.get('format') not in (1, 2):
                     raise ValueError('unsupported model manifest')
