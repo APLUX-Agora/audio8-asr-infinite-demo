@@ -10,14 +10,12 @@ Streaming speech recognition on Qualcomm devices, powered by Edge0's [Audio8-ASR
 
 Source: Lorna Mitchell, FOSDEM 2025, **CC BY 2.0 BE**. Original credits are retained; the excerpt is trimmed and transcoded. [Source, license and changes](docs/MEDIA_ATTRIBUTION.md).
 
-> SDK 0.7.1 candidate: use the branch below with the pinned format-2 HF revisions. The default main branch remains the previous compatible release.
-
 ## 1. Install
 
 Choose one installed CPython interpreter: **3.10, 3.11 or 3.12**. All three were verified on QCS8550 / Ubuntu 22.04 AArch64 with the same SDK and model package. The selected interpreter must provide the `venv` module; the `python3-venv` package supplies it for Ubuntu's default Python. Validation used the 160ms model; see [SDK compatibility](sdk/README.md#compatibility).
 
 ```bash
-git clone --branch codex/infinite-shared-model-assets https://github.com/APLUX-Pandora/audio8-asr-infinite-demo.git
+git clone https://github.com/APLUX-Pandora/audio8-asr-infinite-demo.git
 cd audio8-asr-infinite-demo
 sudo aid-pkg install aidlite-sdk aidlite-qnn248
 sudo apt install ffmpeg libsndfile1 python3-venv
