@@ -122,7 +122,8 @@ end-of-turn settings apply immediately and are stored in your browser only.
   first words.
 - **One run at a time.** The board serves one transcription; a Start from any browser replaces the current run. Audio clock,
   language and gate settings are shared.
-- **Slow connections.** Each event subscriber has a 256-event queue. A stalled subscriber is disconnected when that queue fills or a socket write times out; other subscribers and inference continue. Reconnecting does not replay missed transcript events.
+- **Slow connections.** Each event subscriber has a 256-event queue. A stalled subscriber is disconnected when that queue fills or a socket write times out. Reconnecting does not replay missed transcript events; an active browser treats a lost event connection as an interrupted recording.
+- **Interrupted audio delivery.** A network error, unsuccessful audio/end HTTP request, lost event connection during transcription or 10-second request timeout pauses playback and marks the transcript **Incomplete**. Pending audio is discarded; no failed block is silently skipped or automatically replayed. Copy and download retain an incomplete marker. Reconnect, seek to before the interruption, then press Start to create a new transcription. The browser attempts a session-scoped stop immediately and again when its event connection returns, so late cleanup cannot stop a newer recording. This stops a recording; it does not unload the server's model.
 - **Stopping the server.** SIGTERM/SIGINT stop the worker and wait for any synchronous native call before explicitly closing the engine. During initial model loading, shutdown is deferred until creation returns and the engine has an owner; it then closes without opening the HTTP port.
 
 ## Files

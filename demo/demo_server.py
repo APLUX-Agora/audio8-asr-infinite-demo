@@ -273,9 +273,12 @@ class Session:
             if sid == self.sid:
                 self.ended = True
 
-    def stop(self):
+    def stop(self, sid=None):
         with self.lock:
             if self.closing.is_set():
+                return
+            # A delayed cleanup request from an interrupted browser must not stop a newer run.
+            if sid is not None and sid != self.sid:
                 return
             if self.state == "reload":
                 return
@@ -565,7 +568,7 @@ class Handler(BaseHTTPRequestHandler):
             S.end(b.get("sid"))
             return self._json({})
         if p == "/api/stop":
-            S.stop()
+            S.stop(b.get("sid"))
             return self._json({})
         if p == "/api/config":
             err = S.configure(str(b.get("clock_ms")), str(b.get("lang")))

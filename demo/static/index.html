@@ -292,6 +292,7 @@
   <table>
     <tr><th>Symptom</th><th>What to do</th></tr>
     <tr><td>"Disconnected" in the header</td><td>The page lost the board connection: check the network and reload the page.</td></tr>
+    <tr><td>"Incomplete" after an audio delivery failure</td><td>Playback stops on a network error, failed HTTP request or 10-second request timeout. Reconnect, seek to before the interruption and press Start for a new transcription. Copied/downloaded text is marked incomplete until then.</td></tr>
     <tr><td>No sound</td><td>Check the browser / system volume and the player's volume control; press Start again.</td></tr>
     <tr><td>Upload failed: no audio track</td><td>The file has no audio; use a video with sound, preferably MP4 (H.264 + AAC).</td></tr>
     <tr><td>No text while the video plays</td><td>The page sends the sound it plays to the board: keep the player unmuted with some volume.</td></tr>
@@ -387,13 +388,13 @@ function sendVadParams() {
   post("/api/vad", { threshold: parseFloat($("vTh").value), preroll_s: parseFloat($("vPre").value) });
 }
 function copyText() {
-  const t = text.trim(); if (!t) return;
+  const t = transcriptText(); if (!t) return;
   const ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select();
   let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
   ta.remove(); $("copyBtn").textContent = ok ? "Copied" : "Copy failed"; setTimeout(() => $("copyBtn").textContent = "Copy", 1200);
 }
 function downloadText() {
-  const t = text.trim(); if (!t) return;
+  const t = transcriptText(); if (!t) return;
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([t + "\n"], { type: "text/plain" }));
   a.download = ($("videoSel").value || "transcript").split("/").pop().replace(/\.[^.]+$/, "") + "_transcript.txt"; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -446,11 +447,65 @@ async function post(url, body, signal) {
 // exists in secure contexts (https / localhost); on the board's plain http address the same resampler runs in a
 // ScriptProcessorNode instead.
 let audioCtx = null, pcmNode = null, audioEpoch = 0, sendChain = Promise.resolve(), pcmReset = null;
+let audioController = new AbortController(), transportFailure = null;
+const AUDIO_REQUEST_TIMEOUT_MS = 10000;
+function transcriptText() {
+  const value = text.trim();
+  return value && transportFailure ? `[INCOMPLETE: ${transportFailure.message}]\n${value}` : value;
+}
+async function audioRequest(url, options) {
+  const parent = audioController.signal, controller = new AbortController();
+  const abort = () => controller.abort();
+  parent.addEventListener("abort", abort, { once: true });
+  if (parent.aborted) controller.abort();
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, AUDIO_REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response;
+  } catch (error) {
+    if (timedOut) throw new Error("request timed out");
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    parent.removeEventListener("abort", abort);
+  }
+}
+async function stopInterruptedSession(s) {
+  if (s === null) return;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch("/api/stop", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sid: s }), signal: controller.signal });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  } catch (_) {
+    // A disconnected browser cannot confirm cleanup; reconnect also retries this session-scoped stop.
+    if (transportFailure && transportFailure.sid === s)
+      upMsg("Could not confirm the board stopped. Reconnect before starting a new transcription.", true);
+  } finally { clearTimeout(timer); }
+}
+function failAudio(s, epoch, error) {
+  if (epoch !== audioEpoch || s !== sid || transportFailure) return;
+  transportFailure = { sid: s, message: `Audio delivery interrupted (${error.message || String(error)}).` };
+  running = false; sid = null; restarting = false;
+  video.pause(); clearInterval(clockTimer); clearTimeout(seekTimer);
+  newAudioEpoch();                         // abort the in-flight request and invalidate every queued audio block
+  setState("", "Incomplete");
+  const notice = $("notice"); notice.style.display = "block";
+  notice.textContent = `${transportFailure.message} This transcript is incomplete. Seek to before the interruption and press Start for a new transcription.`;
+  upMsg(transportFailure.message, true);
+  stopInterruptedSession(s);
+}
 function onPcm(epoch, buf) {
   if (epoch !== audioEpoch || !running || sid === null || video.paused || video.seeking) return;
   const s = sid;
-  sendChain = sendChain.then(() => fetch(`/api/audio?sid=${s}`,
-    { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: buf })).catch(() => {});
+  sendChain = sendChain.then(async () => {
+    if (epoch !== audioEpoch || s !== sid || transportFailure) return;
+    await audioRequest(`/api/audio?sid=${s}`,
+      { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: buf });
+  }).catch(error => failAudio(s, epoch, error));
 }
 async function ensureAudio() {
   if (audioCtx) { if (audioCtx.state !== "running") await audioCtx.resume(); return; }
@@ -477,12 +532,18 @@ async function ensureAudio() {
   src.connect(pcmNode); pcmNode.connect(audioCtx.destination);   // the capture node outputs silence
 }
 function newAudioEpoch() {                        // drop audio captured before a start / seek
+  audioController.abort(); audioController = new AbortController();
   audioEpoch += 1;
+  sendChain = Promise.resolve();
   if (pcmReset) pcmReset(audioEpoch);
 }
 function sendEnd() {
-  const s = sid;
-  if (s !== null) sendChain = sendChain.then(() => post("/api/end", { sid: s })).catch(() => {});
+  const s = sid, epoch = audioEpoch;
+  if (s !== null) sendChain = sendChain.then(async () => {
+    if (epoch !== audioEpoch || s !== sid || transportFailure) return;
+    await audioRequest("/api/end", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sid: s }) });
+  }).catch(error => failAudio(s, epoch, error));
 }
 function countUnits(t) {          // words for English, characters (CJK, letters, digits) for Chinese
   t = t.trim(); if (!t) return 0;
@@ -596,31 +657,50 @@ function hotwordOptions() {
           continuation_boost: Number($("hotwordContinuation").value)};
 }
 async function start() {
+  if (restarting || switching) return;
   restarting = true;
   const off = startPos();
   video.pause(); if (off === 0) video.currentTime = 0;
+  running = false; sid = null; newAudioEpoch();
+  const epoch = audioEpoch;
+  transportFailure = null; upMsg("");
   resetTranscript(false);
-  const r = await post("/api/start", { video: $("videoSel").value, offset_s: off, hotwords: hotwordOptions() });
-  if (r.error) { upMsg(r.error, true); restarting = false; return; }
-  sid = r.sid; running = true;
-  await ensureAudio();
-  newAudioEpoch();
-  await video.play();
-  restarting = false;
+  try {
+    const response = await audioRequest("/api/start", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ video: $("videoSel").value, offset_s: off, hotwords: hotwordOptions() }) });
+    const r = await response.json();
+    if (epoch !== audioEpoch) return;
+    if (r.error) throw new Error(r.error);
+    sid = r.sid;
+    await ensureAudio();
+    if (epoch !== audioEpoch) return;
+    if (pcmReset) pcmReset(audioEpoch);
+    running = true;
+    await video.play();
+  } catch (error) { failAudio(sid, epoch, error); }
+  finally { if (epoch === audioEpoch) restarting = false; }
 }
 async function stop(signal) {
-  running = false; clearInterval(clockTimer); sid = null;
-  video.pause();
-  await post("/api/stop", {}, signal);
+  const s = sid;
+  running = false; restarting = false; clearInterval(clockTimer); sid = null;
+  video.pause(); newAudioEpoch();
+  if (s !== null) await post("/api/stop", { sid: s }, signal);
 }
 video.addEventListener("ended", () => { if (running) sendEnd(); });
 async function jump() {                            // playhead moved during a run: continue from there (fresh session)
-  if (!running) return;
-  const r = await post("/api/start", { video: $("videoSel").value, offset_s: video.currentTime, jump: true, hotwords: hotwordOptions() });
-  if (r.error) { upMsg(r.error, true); return; }
-  sid = r.sid;
-  newAudioEpoch();
-  if (video.paused) video.play();
+  if (!running || restarting) return;
+  restarting = true; running = false; video.pause(); newAudioEpoch();
+  const epoch = audioEpoch;
+  try {
+    const response = await audioRequest("/api/start", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ video: $("videoSel").value, offset_s: video.currentTime, jump: true, hotwords: hotwordOptions() }) });
+    const r = await response.json();
+    if (epoch !== audioEpoch) return;
+    if (r.error) throw new Error(r.error);
+    sid = r.sid; running = true;
+    await video.play();
+  } catch (error) { failAudio(sid, epoch, error); }
+  finally { if (epoch === audioEpoch) restarting = false; }
 }
 video.addEventListener("seeked", () => {           // debounce: scrubbing back and forth restarts once, 0.3 s after the last move
   updateStartLabel();
@@ -650,6 +730,7 @@ eotSel = +lsGet("demo.eotSel", "2"); $("eTh").value = lsGet("demo.eotThr", "0.6"
 
 const es = new EventSource("/api/events");
 function handleEvent(ev) {
+  if (transportFailure && ["text", "reset", "state"].includes(ev.type)) return;
   if (ev.type === "info") {
     if (!ev.clock_ms || ev.state === "reload") return;
     const initialInfo = !clock;
@@ -674,7 +755,8 @@ function handleEvent(ev) {
     $("cfg").textContent = `${ev.lang.toUpperCase()} · ${ev.clock_ms} ms clock · ${ev.delay_ms} ms delay`;
     $("foot").textContent = ev.roll_s ? `${ev.clock_ms} ms clock · unlimited length (rolling ${ev.roll_s} s context) · model load ${ev.init_s} s`
                                       : `${ev.clock_ms} ms clock · up to ${ev.max_audio_s} s of audio per run · model load ${ev.init_s} s`;
-    setState(ev.state === "running" ? "running" : "", ev.state === "running" ? "Transcribing" : "Ready");
+    if (transportFailure) setState("", "Incomplete");
+    else setState(ev.state === "running" ? "running" : "", ev.state === "running" ? "Transcribing" : "Ready");
   } else if (ev.type === "reset") {
     if (ev.jump) { insertSeparator(ev.offset_s); resetTranscript(true); } else resetTranscript(false);
   } else if (ev.type === "text") {
@@ -726,9 +808,10 @@ function handleEvent(ev) {
   }
 }
 es.onmessage = m => handleEvent(JSON.parse(m.data));
+es.onopen = () => { if (transportFailure) stopInterruptedSession(transportFailure.sid); };
 es.onerror = () => {
-  setState("", "Disconnected");
-
+  if (running) failAudio(sid, audioEpoch, new Error("connection to the board lost"));
+  else if (!transportFailure) setState("", "Disconnected");
 };
 
 loadVideos();
