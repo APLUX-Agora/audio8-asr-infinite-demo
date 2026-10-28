@@ -117,7 +117,7 @@ class Session:
         if not self.clocks:
             raise SystemExit("no verified model package: " + "; ".join(
                 f"{clock} ms: {error}" for clock, error in self.clock_errors.items()))
-        self.gate = SileroGate(extra_file(MODELS, "silero_vad"))
+        self.gate = SileroGate(os.path.join(HERE, "assets", "silero_vad.onnx"))
         c = os.environ.get("A8_CLOCK_MS")
         if c and c not in self.clocks:
             print(f"[demo] the {c} ms clock is not installed, using {self.clocks[0]} ms", flush=True)

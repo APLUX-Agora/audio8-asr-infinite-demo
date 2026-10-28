@@ -120,7 +120,7 @@ def _manifest(model_dir):
 
 
 def extra_file(model_dir, name):
-    """Path of a package file the SDK itself does not use (manifest.json "extras", e.g. "silero_vad"), or None."""
+    """Path of a package file the SDK itself does not use (manifest.json "extras", e.g. "tokenizer"), or None."""
     model_dir = resolve_model_dir(model_dir)
     rel = _manifest(model_dir).get("extras", {}).get(name)
     return os.path.join(model_dir, rel) if rel else None

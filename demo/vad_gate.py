@@ -17,7 +17,7 @@ stretches look like "nobody talking".
 
 usage:
     g = SileroGate(path_of_silero_vad_onnx); out = g.process(x_chunk) ...; out_tail = g.flush()
-    python3 vad_gate.py --model <model dir>/common/silero_vad.onnx --wav in.wav --out gated.wav   (offline check)
+    python3 vad_gate.py --model demo/assets/silero_vad.onnx --wav in.wav --out gated.wav   (offline check)
 """
 import argparse
 from collections import deque
@@ -157,7 +157,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--wav", required=True)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--model", required=True, help="silero_vad.onnx of the model package")
+    ap.add_argument("--model", required=True, help="Silero VAD ONNX business asset")
     ap.add_argument("--threshold", type=float, default=0.5)
     ap.add_argument("--preroll", type=float, default=0.5)
     ap.add_argument("--hangover", type=float, default=1.0)

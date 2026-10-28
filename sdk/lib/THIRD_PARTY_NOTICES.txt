@@ -16,7 +16,7 @@ sdk/lib/libaudio8_asr.so includes nlohmann/json 3.12.0
   COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-The separately downloaded Silero VAD v5 model is used by the demo, not embedded in this SDK library.
+The Demo-bundled Silero VAD v5 model is used by the demo, not embedded in this SDK library.
 Copyright (c) 2020-present Silero Team
 License: MIT; see LICENSES/Silero-VAD-MIT.txt.
 https://github.com/snakers4/silero-vad

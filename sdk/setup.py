@@ -1,4 +1,4 @@
-"""Package the unchanged released native library; do not compile the engine during installation."""
+"""Package the matched prebuilt native library; do not compile the engine during installation."""
 import hashlib
 import json
 from pathlib import Path

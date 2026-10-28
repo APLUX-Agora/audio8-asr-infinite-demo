@@ -6,8 +6,8 @@ Install into your application's Python 3.10, 3.11 or 3.12 virtual environment:
 python -m pip install /path/to/audio8-asr-infinite-demo/sdk
 ```
 
-The package includes the matching precompiled native SDK 0.7.0 and its licenses. Python
-package version `0.7.0.post1` adds installation support without changing that native library.
+The package includes the matching precompiled native SDK 0.7.1 and its licenses. Python
+package version `0.7.1` adds installation support without changing that native library.
 The target is **Linux AArch64** with AidLite, its QNN 2.48 backend and the matching board BSP.
 Installation does not install the vendor runtime or download models.
 

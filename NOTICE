@@ -28,7 +28,7 @@ sdk/lib/libaudio8_asr.so includes nlohmann/json 3.12.0
   COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Silero VAD v5 (models/silero_vad.onnx, part of the model package, used by the demo's silence gate)
+Silero VAD v5 (demo/assets/silero_vad.onnx, bundled for the Demo silence gate)
   https://github.com/snakers4/silero-vad
   License: MIT
 

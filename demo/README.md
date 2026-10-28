@@ -151,8 +151,8 @@ with attribution retained. See [source, license and changes](../docs/MEDIA_ATTRI
 
 Expand Hotwords, enable the checkbox and enter comma- or newline-separated words/phrases. Default is off and the word list is empty. Changes apply on the next Start or seek, not halfway through the current session. Advanced controls expose top-k and first/continuation boosts. Prefer a short list relevant to the content; ordinary words can be changed incorrectly.
 
-SDK 0.7.0 and current Hugging Face packages include the matching optional tokenizer.json. The SDK resolves
-manifest extras.tokenizer or the package-root file automatically. No tokenizer or system ICU installation is needed while hotwords remain disabled.
+SDK 0.7.1 and current Hugging Face packages include the matching optional tokenizer.json. The SDK resolves
+manifest extras.tokenizer or the package-root file automatically. No separate tokenizer or system ICU installation is required.
 See the [Python API](../sdk/PYTHON_API.md)
 for limits and behavior.
 
@@ -183,6 +183,10 @@ the Reload model button appears when the server reports an engine failure.
 
 The repository-root `requirements.txt` installs `./sdk` into this Demo's selected `.venv`.
 Web and Python examples import that installed package, without adding SDK source directories to
-`sys.path`. The package includes the same precompiled SDK 0.7.0; its Python distribution version
-is 0.7.0.post1. The launcher still discovers this checkout's `models/` or uses `--models` / `A8_MODELS`.
+`sys.path`. The package includes the same precompiled SDK 0.7.1; its Python distribution version
+is 0.7.1. The launcher still discovers this checkout's `models/` or uses `--models` / `A8_MODELS`.
 Model/runtime setup remains separate; see [Python installation](../sdk/PYTHON_PACKAGE.md).
+
+## Silence-gate asset
+
+Silero VAD v5 is bundled at `demo/assets/silero_vad.onnx` with its MIT license. It is independent of the HF model package. The semantic end-of-turn VAD remains part of the Infinite model.

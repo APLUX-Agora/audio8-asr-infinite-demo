@@ -6,8 +6,8 @@ Use the [Python API reference](PYTHON_API.md) for every method/result and the
 [Runnable examples](../examples/README.md) include Python file/stream programs and one C++ WAV program.
 There is no second SDK or separate C++ inference implementation.
 
-- SDK version: **0.7.0**.
-- Library SHA256: `21d8381b323f6a4f341363892a65ff9904568f879e3c5174d59c9aba1f43cc67`.
+- SDK version: **0.7.1**.
+- Library SHA256: `c5a6530e889dcb3eb87af7f5371ee317296e79e0e119569d6fedf3213a182e87`.
 - Platform: Linux AArch64, AidLite/QNN2.48 and matching board BSP/driver.
 - Current Hugging Face model packages contain single-file prefix caches and the optional matching hotword tokenizer.
 - ICU70.1 code and Unicode data are embedded; no system ICU installation is required.
@@ -22,7 +22,7 @@ python -m pip check
 ```
 
 You can then import `audio8_asr` from another directory without repository import-path changes.
-The Python distribution is `audio8-asr-infinite-sdk==0.7.0.post1`, carrying the unchanged native SDK 0.7.0.
+The Python distribution is `audio8-asr-infinite-sdk==0.7.1`, carrying native SDK 0.7.1.
 Its native library is installed inside the Python package; the original `sdk/lib/` library remains the
 C/C++ integration artifact. Both have the same SHA256. Models are downloaded separately and selected
 with an explicit package root or `A8_MODELS`. AidLite/QNN and the board BSP remain external prerequisites.
@@ -52,6 +52,7 @@ wait for synchronous native work before destruction. The library does not perfor
 - `AUDIO8_ASR_LIB`: explicit qualified library path.
 - `A8_KEEP_STDOUT=1`: retain vendor initialization/destruction notices on stdout instead of stderr.
 - `A8_AIDLITE_LOG`: AidLite log level, default `warning`.
+
 
 ## Licensing / 许可
 

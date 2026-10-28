@@ -85,7 +85,7 @@ class PackageVerifier:
         with self._lock:
             try:
                 manifest = self._document('manifest.json')
-                if not isinstance(manifest, dict) or manifest.get('format') != 1:
+                if not isinstance(manifest, dict) or manifest.get('format') not in (1, 2):
                     raise ValueError('unsupported model manifest')
                 clocks = manifest.get('clocks')
                 if not isinstance(clocks, dict) or not isinstance(clocks.get(str(clock)), dict):
@@ -94,11 +94,27 @@ class PackageVerifier:
                 missing = [key for key in REQUIRED if key not in layout]
                 if missing:
                     raise ValueError('incomplete clock manifest: ' + ', '.join(missing))
-                names = {self.relative(value) for value in layout.values()}
-                extras = manifest.get('extras')
-                if not isinstance(extras, dict) or not extras.get('silero_vad'):
-                    raise ValueError('missing silence-gate model in manifest')
-                names.add(self.relative(extras['silero_vad']))
+                shared_embedding = manifest.get('format') == 2
+                names = {self.relative(value) for key, value in layout.items()
+                         if not (shared_embedding and key == 'embedding')}
+                if shared_embedding:
+                    spec = manifest.get('shared', {}).get('embedding', {})
+                    if (layout['embedding'] != 'shared:embedding' or spec.get('file') != 'embedding.bin'
+                            or spec.get('dtype') != 'float32-le' or spec.get('shape') != [151936, 2048]
+                            or spec.get('bytes') != 151936 * 2048 * 4
+                            or not re.fullmatch('[a-f0-9]{64}', spec.get('sha256', ''))):
+                        raise ValueError('invalid shared embedding metadata')
+                    container = self.root.resolve().parent
+                    shared_path = container / 'shared' / 'embedding.bin'
+                    if shared_path.resolve() != shared_path:
+                        raise ValueError('shared embedding must stay inside the model container')
+                    if not shared_path.is_file() or shared_path.stat().st_size != spec['bytes']:
+                        raise ValueError('missing or incorrect-size shared embedding.bin')
+                    shared_verifier = PackageVerifier(container / 'shared')
+                    shared_sums = shared_verifier._checksums()
+                    if shared_sums.get('embedding.bin') != spec['sha256']:
+                        raise ValueError('shared embedding checksum does not match manifest')
+                    shared_verifier._verify('embedding.bin', spec['sha256'])
                 sums = self._checksums()
                 for name in sorted(names):
                     if name not in sums:

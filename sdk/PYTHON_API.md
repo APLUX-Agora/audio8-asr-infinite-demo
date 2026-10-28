@@ -7,7 +7,7 @@ python -m pip install ./sdk
 ```
 
 Then `from audio8_asr import ASRModel` works in your own application without `sys.path` changes.
-The package includes the matched native SDK 0.7.0; Python distribution version is `0.7.0.post1`.
+The package includes the matched native SDK 0.7.1; Python distribution version is `0.7.1`.
 Use Python, native library and models from compatible deliveries. No model is downloaded by `from_pretrained`.
 
 ## Quick start
