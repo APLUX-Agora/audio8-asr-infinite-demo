@@ -10,7 +10,8 @@ The Python programs use this Demo's `.venv` and its pip-installed SDK; they do n
 ```
 
 Outputs text to stdout and processing diagnostics to stderr. This is the bare engine. For long audio with music,
-applause or pauses, the streaming example adds the Web Demo's silence gate and soft-reset policy:
+applause or pauses, the streaming example adds the Web Demo's silence gate and soft-reset policy.
+The gate loads the bundled `demo/assets/silero_vad.onnx`; it does not require a VAD file in the HF package:
 
 ```bash
 .venv/bin/python examples/python/stream_file.py examples/audio/xiaomi18pro_highlights_10min_16k.flac --lang zh

@@ -27,7 +27,7 @@ import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "demo"))
-from audio8_asr import ASRModel, A8Error, extra_file, resolve_model_dir  # noqa: E402
+from audio8_asr import ASRModel, A8Error, resolve_model_dir  # noqa: E402
 from reset_policy import ResetPolicy  # noqa: E402
 from transcribe_file import SR, load_audio  # noqa: E402
 from example_lifecycle import managed_engine, ExampleInterrupted  # noqa: E402
@@ -61,7 +61,7 @@ def main():
         gate, pol = None, None
         if not a.plain:
             from vad_gate import SileroGate                          # needs onnxruntime
-            gate = SileroGate(extra_file(a.models, "silero_vad"))
+            gate = SileroGate(os.path.join(ROOT, "demo", "assets", "silero_vad.onnx"))
             pol = ResetPolicy(eng)
         h = eng.info["eot_horizons_s"].index(a.eot_horizon)
         delay_s = eng.info["num_delay_tokens"] * eng.clock_s
