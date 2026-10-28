@@ -108,7 +108,7 @@ def resolve_model_dir(model_dir=None, *, models_root=None):
         choices = "; ".join(str(p) for p in candidates)
         raise A8Error(-2, f"multiple model packages found: {choices}. Select one explicitly, e.g. --models {shlex.quote(str(candidates[0]))}")
     raise A8Error(-2, f"no model package found; checked {root}/manifest.json and {root}/*/manifest.json. "
-                     "Download your chip folder into models/, or pass the package root explicitly with --models.")
+                     "Also checked models.json at the root and immediate children. Download the common resources and one SoC target into models/, or pass the package root explicitly with --models.")
 
 
 def _manifest(model_dir):

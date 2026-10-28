@@ -709,7 +709,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--models", default=os.environ.get("A8_MODELS"),
-                    help="package root containing manifest.json; default: discover this demo models directory")
+                    help="package root containing models.json or legacy manifest.json; default: discover this demo models directory")
     a = ap.parse_args()
     try:
         MODELS = resolve_model_dir(a.models, models_root=f"{ROOT}/models")
