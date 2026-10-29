@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-#define A8_VERSION "0.7.2-dev2"
+#define A8_VERSION "0.7.2-dev3"
 
 #if defined(__GNUC__)
 #define A8_API __attribute__((visibility("default")))
@@ -94,7 +94,7 @@ typedef struct {
 A8_API const char *a8_version(void);
 A8_API void a8_default_options(a8_options *opt);
 
-/* Load the model from model_dir (layout: models/README.md). NULL on failure, see a8_create_error().
+/* Load the model from model_dir (layout: docs/MODEL_SETUP.md). NULL on failure, see a8_create_error().
    While loading (and in a8_destroy) the process's stdout is sent to stderr: the vendor runtime prints notices there
    (A8_KEEP_STDOUT=1 to keep them on stdout). */
 A8_API a8_engine *a8_create(const char *model_dir, const a8_options *opt);
@@ -120,7 +120,8 @@ A8_API int a8_finish_audio(a8_engine *e, const float *pcm, int n, int tail_token
 
 /* Optional decode-time token-prefix bias, disabled by default. Call after create/reset,
    before feeding any audio. words_json is a JSON array of UTF-8 strings; [] disables.
-   Nonempty words require the matching tokenizer.json path (no model-package changes).
+   Nonempty words require the matching tokenizer. NULL/empty tokenizer_path uses the
+   configured models.json resources.tokenizer (legacy extras.tokenizer); an explicit path overrides it.
    top_k: 0 = no gate, otherwise 1..vocabulary size. Boosts are finite logit units in [0,100].
    Configuration persists across reset; matching history clears on reset/soft-reset.
    This is a probabilistic preference and can change ordinary words; no term-specific rules.

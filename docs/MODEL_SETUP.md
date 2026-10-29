@@ -11,7 +11,7 @@ Run these commands from the Demo checkout after [installation](../README.md#1-in
 | QCS8275 / IQ8 | 2.48 | `qcs8275_qnn248` |
 | QCS9075 / IQ9 | 2.48 | `qcs9075_qnn248` |
 
-Both variants provide these target resources. Current native SDK **0.7.2-dev2** / Python package **0.7.2.dev2** is a development delivery, not a formal SDK release. Both clocks' SDK inference was verified on QCS8550 / Ubuntu 22.04 / QNN 2.48 with CPython 3.10, 3.11 and 3.12. The current configuration-driven browser playback/transcription/EOF verification used 160ms. Other SoC NPU execution and Ubuntu releases are not qualified by that evidence.
+Both variants provide these target resources. Current native SDK **0.7.2-dev3** / Python package **0.7.2.dev3** is a development delivery, not a formal SDK release. This dev3 build's SDK inference and hotword checks passed for both clocks on QCS8550 / Ubuntu 22.04 / QNN 2.48 with CPython 3.10, 3.11 and 3.12. The previous dev2 browser playback/transcription/EOF verification used 160ms. Other SoC NPU execution and Ubuntu releases are not qualified by that evidence.
 
 Download common resources and exactly one target into each independent package root. The examples below select QCS8550; replace `TARGET` using the table for another board. Both downloads for a variant use its same immutable commit. Authentication is required only while the repository is private or access-controlled; public downloads do not require login.
 

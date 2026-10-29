@@ -39,7 +39,9 @@ def inspect(root):
             raise ValueError('unsupported models.json format, model identity or audio clock')
         resources = doc['resources']
         spec = resources['token_vectors']
-        if (spec['dtype'] != 'float32-le' or spec['shape'] != [151936, 2048]
+        if (spec['dtype'] != 'float32-le' or not isinstance(spec['shape'], list)
+                or len(spec['shape']) != 2 or any(type(d) is not int for d in spec['shape'])
+                or spec['shape'] != [151936, 2048]
                 or spec['layout'] != 'row-major'):
             raise ValueError('unsupported embedding metadata')
         layout = {}

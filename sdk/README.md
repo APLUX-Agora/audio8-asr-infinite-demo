@@ -7,9 +7,9 @@ Use the [Python API reference](PYTHON_API.md) for every method/result and the
 There is no second SDK or separate C++ inference implementation.
 
 - SDK version: **0.7.2-dev2**.
-- Library SHA256: `a5102a3a26f64b1295e806feeb1b152453d37ab5baa4bf163e4771a93163997c`.
+- Library SHA256: `28208ab4fcd8677162edff6191e673add348ae523251c0df41bccec857010bdc`.
 - Platform: Linux AArch64, AidLite/QNN2.48 and matching board BSP/driver.
-- Current Hugging Face model packages contain single-file prefix caches and the optional matching hotword tokenizer.
+- Current Hugging Face model packages contain single-file prefix caches and the declared matching hotword tokenizer.
 - ICU70.1 code and Unicode data are embedded; no system ICU installation is required.
 
 ## Install for Python integration
@@ -22,7 +22,7 @@ python -m pip check
 ```
 
 You can then import `audio8_asr` from another directory without repository import-path changes.
-The Python distribution is `audio8-asr-infinite-sdk==0.7.2.dev2`, carrying native SDK 0.7.2-dev2.
+The Python distribution is `audio8-asr-infinite-sdk==0.7.2.dev3`, carrying native SDK 0.7.2-dev3.
 Its native library is installed inside the Python package; the original `sdk/lib/` library remains the
 C/C++ integration artifact. Both have the same SHA256. Models are downloaded separately and selected
 with an explicit package root or `A8_MODELS`. AidLite/QNN and the board BSP remain external prerequisites.
@@ -31,9 +31,9 @@ See [package details](PYTHON_PACKAGE.md) and [Python API](PYTHON_API.md).
 ## Compatibility
 
 This SDK is tested on QCS8550 / Ubuntu22.04 with the 80ms and 160ms models.
-Historical SDK 0.6.1 userspace checks do not qualify this native 0.7.2-dev2 build on Ubuntu 24.04/26.04.
+Historical SDK 0.6.1 userspace checks do not qualify this native 0.7.2-dev3 build on Ubuntu 24.04/26.04.
 Other chip targets and Ubuntu releases require their own qualification before broader claims.
-CPython **3.10, 3.11 and 3.12** passed matching independent SDK inference checks with both clocks. Current configuration-driven browser playback/transcription/EOF verification used 160ms; older three-version Web checks used a previous native build and do not qualify the full current matrix. Choose one interpreter with matching `venv` support and create this checkout's `.venv`; see [installation](../README.md#1-install). This does not extend the OS/BSP/NPU test scope. AidLite/QNN remain external prerequisites;
+CPython **3.10, 3.11 and 3.12** passed matching independent SDK inference checks with both clocks. Previous dev2 browser playback/transcription/EOF verification used 160ms; older three-version Web checks used a previous native build and do not qualify the full current matrix. Choose one interpreter with matching `venv` support and create this checkout's `.venv`; see [installation](../README.md#1-install). This does not extend the OS/BSP/NPU test scope. AidLite/QNN remain external prerequisites;
 see the [native environment and loader requirements](NATIVE_INTEGRATION.md#target-and-linking).
 
 ## C API and Python integration
@@ -68,4 +68,4 @@ portions keep their own terms. See [licensing scope](../LICENSING.md),
 
 ## models.json integration candidate
 
-Python package 0.7.2.dev2 contains native 0.7.2-dev2. This is an integration candidate, not a formal SDK release. Pass the package root containing models.json; legacy manifest formats remain supported. See [model setup](../docs/MODEL_SETUP.md) and [candidate contract](MODEL_PACKAGE.md).
+Python package 0.7.2.dev3 contains native 0.7.2-dev3. This is an integration candidate, not a formal SDK release. Pass the package root containing models.json; legacy manifest formats remain supported. See [model setup](../docs/MODEL_SETUP.md) and [candidate contract](MODEL_PACKAGE.md).

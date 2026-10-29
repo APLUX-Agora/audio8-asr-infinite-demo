@@ -152,8 +152,7 @@ int main(int argc, char** argv) {
         check_stop();
         checked(engine.get(), a8_reset(engine.get()));
         if (!words.empty()) {
-            if (tokenizer.empty()) tokenizer = models + "/tokenizer.json";
-            checked(engine.get(), a8_set_hotwords(engine.get(), tokenizer.c_str(), words_json(words).c_str(), 50, 6, 8));
+            checked(engine.get(), a8_set_hotwords(engine.get(), tokenizer.empty() ? nullptr : tokenizer.c_str(), words_json(words).c_str(), 50, 6, 8));
         }
         std::cerr << "[example] engine ready; " << clock << " ms; " << lang << std::endl;
         const auto start = std::chrono::steady_clock::now();

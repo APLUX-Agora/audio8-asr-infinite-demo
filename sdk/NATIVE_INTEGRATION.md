@@ -115,16 +115,18 @@ requires closing and recreating the Python model; do not assume that a new reque
 | `a8_soft_reset(engine,replay_from_s)` | Replay cached rows newer than this session time in seconds, up to replay_max_s. Requires a token and unfinished session; returns new replay token count. Does not reset the audio tower. |
 | `a8_eot_probs(engine,out)` | Caller float array `[4][8]`; reads the last token's semantic-VAD class distribution. Enable semantic VAD and query after a token. |
 | `a8_get_stats(engine,out)` | Fills caller-owned a8_stats, returns 0. |
-| `a8_set_hotwords(engine,tokenizer_path,words_json,top_k,start_boost,continuation_boost)` | After reset, before audio: matching tokenizer file; JSON array of UTF-8 strings (`[]` disables); top_k 0 or1..vocabulary; finite boosts [0,100]. Returns 0. Limits:256 terms,1024 UTF-8 bytes/term,128 tokens/variant,65536 JSON bytes. Configuration survives reset; matching history clears. The bias is a preference, not a spelling guarantee. |
+| `a8_set_hotwords(engine,tokenizer_path,words_json,top_k,start_boost,continuation_boost)` | After reset, before audio: matching tokenizer file, or NULL/empty to resolve models.json resources.tokenizer (legacy extras.tokenizer); JSON array of UTF-8 strings (`[]` disables); top_k 0 or1..vocabulary; finite boosts [0,100]. Returns 0. Limits:256 terms,1024 UTF-8 bytes/term,128 tokens/variant,65536 JSON bytes. Configuration survives reset; matching history clears. The bias is a preference, not a spelling guarantee. |
+
+The configured NULL/empty tokenizer-path default is available in native 0.7.2-dev3; older deliveries require an explicit tokenizer path.
 
 For optional hotwords the example accepts repeated `--hotword TERM` and `--tokenizer FILE`; it defaults to the
-current package's `tokenizer.json`. `--realtime` paces 100ms input blocks; omit it for unpaced file processing.
+current package's configured tokenizer path. An explicit path overrides that selection; missing declarations never fall back to a conventional filename. `--realtime` paces 100ms input blocks; omit it for unpaced file processing.
 Normal stdout is transcript UTF-8 bytes plus a newline. Diagnostics go to stderr. Exit status is 0 on success,
 1 on an input/SDK error, or 128+signal (130 for SIGINT,143 for SIGTERM) after cooperative cleanup.
 
 ## Compatibility
 
-The delivered native SDK is **0.7.2-dev2**, paired with Python **0.7.2.dev2** and models.json version 2. This is a development delivery, not a formal SDK release. Both clocks' SDK inference was verified on QCS8550 / Ubuntu 22.04 / QNN 2.48, including CPython 3.10, 3.11 and 3.12. Current browser playback/transcription/EOF verification used 160ms; other chip targets and Ubuntu releases remain unqualified. Historical SDK checks do not qualify a different native build. AidLite/QNN and the board BSP remain external requirements. See [model setup](../docs/MODEL_SETUP.md).
+The delivered native SDK is **0.7.2-dev3**, paired with Python **0.7.2.dev3** and models.json version 2. This is a development delivery, not a formal SDK release. Both clocks' SDK inference was verified on QCS8550 / Ubuntu 22.04 / QNN 2.48, including CPython 3.10, 3.11 and 3.12. Previous dev2 browser playback/transcription/EOF verification used 160ms; other chip targets and Ubuntu releases remain unqualified. Historical SDK checks do not qualify a different native build. AidLite/QNN and the board BSP remain external requirements. See [model setup](../docs/MODEL_SETUP.md).
 
 ## SDK 0.7.0 request controls
 
@@ -140,4 +142,4 @@ After a live `a8_feed` exhausts the cap, state is terminal `2`; do not call nati
 
 ## Root models.json configuration
 
-SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Both clocks have matching QCS8550 / Ubuntu 22.04 SDK inference evidence; current browser playback/transcription/EOF verification used 160ms. Other profiles remain untested.
+SDK 0.7.2.dev3 (native 0.7.2-dev3) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Both clocks have matching QCS8550 / Ubuntu 22.04 SDK inference evidence; previous dev2 browser playback/transcription/EOF verification used 160ms. Other profiles remain untested.
