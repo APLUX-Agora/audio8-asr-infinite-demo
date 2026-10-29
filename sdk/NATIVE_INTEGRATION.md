@@ -63,7 +63,7 @@ wait for the current synchronous native call; it is not an immediate cancel API.
 
 The SDK owns the engine and its graphs/caches. PCM, options, output buffers and result structs are supplied by the
 caller. Do not free native error/version string pointers. Copy an error message before making another operation
-on the same engine. The library neither owns a file reader nor creates a background worker.
+on the same engine. Media decoding and playback are outside the C ABI; native inference calls are synchronous.
 
 ## Options and data structures
 
@@ -117,7 +117,7 @@ requires closing and recreating the Python model; do not assume that a new reque
 | `a8_get_stats(engine,out)` | Fills caller-owned a8_stats, returns 0. |
 | `a8_set_hotwords(engine,tokenizer_path,words_json,top_k,start_boost,continuation_boost)` | After reset, before audio: matching tokenizer file, or NULL/empty to resolve models.json resources.tokenizer (legacy extras.tokenizer); JSON array of UTF-8 strings (`[]` disables); top_k 0 or1..vocabulary; finite boosts [0,100]. Returns 0. Limits:256 terms,1024 UTF-8 bytes/term,128 tokens/variant,65536 JSON bytes. Configuration survives reset; matching history clears. The bias is a preference, not a spelling guarantee. |
 
-The configured NULL/empty tokenizer-path default is available in native 0.7.2-dev3; older deliveries require an explicit tokenizer path.
+The configured NULL/empty tokenizer-path default is available in native 0.7.2; older deliveries require an explicit tokenizer path.
 
 For optional hotwords the example accepts repeated `--hotword TERM` and `--tokenizer FILE`; it defaults to the
 current package's configured tokenizer path. An explicit path overrides that selection; missing declarations never fall back to a conventional filename. `--realtime` paces 100ms input blocks; omit it for unpaced file processing.
@@ -126,7 +126,7 @@ Normal stdout is transcript UTF-8 bytes plus a newline. Diagnostics go to stderr
 
 ## Compatibility
 
-The delivered native SDK is **0.7.2-dev3**, paired with Python **0.7.2.dev3** and models.json version 2. This is a development delivery, not a formal SDK release. Both clocks' SDK inference was verified on QCS8550 / Ubuntu 22.04 / QNN 2.48, including CPython 3.10, 3.11 and 3.12. Previous dev2 browser playback/transcription/EOF verification used 160ms; other chip targets and Ubuntu releases remain unqualified. Historical SDK checks do not qualify a different native build. AidLite/QNN and the board BSP remain external requirements. See [model setup](../docs/MODEL_SETUP.md).
+The delivered native SDK and Python package are **0.7.2**, using models.json version 2. Both 80ms and 160ms are qualified on QCS8550 / Ubuntu 22.04 / AidLite 2.5.0.284 / QNN 2.48 with CPython 3.10, 3.11 and 3.12. Other SoC NPU execution and Ubuntu releases remain untested. AidLite/QNN and the board BSP are external requirements. See [model setup](../docs/MODEL_SETUP.md).
 
 ## SDK 0.7.0 request controls
 
@@ -142,4 +142,4 @@ After a live `a8_feed` exhausts the cap, state is terminal `2`; do not call nati
 
 ## Root models.json configuration
 
-SDK 0.7.2.dev3 (native 0.7.2-dev3) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Both clocks have matching QCS8550 / Ubuntu 22.04 SDK inference evidence; previous dev2 browser playback/transcription/EOF verification used 160ms. Other profiles remain untested.
+SDK 0.7.2 (native 0.7.2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Both clocks are qualified on QCS8550 / Ubuntu 22.04 with CPython 3.10, 3.11 and 3.12. Other profiles remain untested.

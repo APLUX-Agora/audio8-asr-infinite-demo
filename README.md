@@ -10,7 +10,7 @@ Streaming speech recognition on Qualcomm devices, powered by Edge0's [Audio8-ASR
 
 Source: Lorna Mitchell, FOSDEM 2025, **CC BY 2.0 BE**. Original credits are retained; the excerpt is trimmed and transcoded. [Source, license and changes](docs/MEDIA_ATTRIBUTION.md).
 
-SDK development version 0.7.2.dev3 supports the configurable models.json version 2 package.
+SDK version 0.7.2 supports the configurable models.json version 2 package.
 
 ## 1. Install
 

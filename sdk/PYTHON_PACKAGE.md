@@ -6,8 +6,8 @@ Install into your application's Python 3.10, 3.11 or 3.12 virtual environment:
 python -m pip install /path/to/audio8-asr-infinite-demo/sdk
 ```
 
-The package includes native SDK 0.7.2-dev3 and its licenses. Python distribution
-version `0.7.2.dev3` resolves model resources through models.json version 2.
+The package includes native SDK 0.7.2 and its licenses. Python distribution
+version `0.7.2` resolves model resources through models.json version 2.
 The target is **Linux AArch64** with AidLite, its QNN 2.48 backend and the matching board BSP.
 Installation does not install the vendor runtime or download models.
 
@@ -32,4 +32,4 @@ Applicable upstream and third-party terms remain in the included notices and lic
 
 ## Root models.json configuration
 
-SDK 0.7.2.dev3 (native 0.7.2-dev3) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. This configuration-driven version was tested on QCS8550 / Ubuntu22.04 with both80ms and160ms using CPython3.10,3.11 and3.12.
+SDK 0.7.2 (native 0.7.2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. This configuration-driven version was tested on QCS8550 / Ubuntu22.04 with both80ms and160ms using CPython3.10,3.11 and3.12.

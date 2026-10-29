@@ -5,13 +5,13 @@
  * The engine implements the model's own streaming protocol (DSM: one text token per audio clock): audio windowing,
  * mel, audio tower + projector (NPU), LM (NPU, native KV), KV / position management, the 30 s rolling context, greedy
  * decoding, the semantic-VAD (end-of-turn) heads and the soft-reset replay mechanism.
- * It is passive: no threads, no timers, no IO. The caller decides when and how much audio to feed; every call runs
+ * It reads model resources at load time and has no application worker or timer. The caller feeds PCM; each call runs
  * synchronously all the clocks the audio allows. Policies (silence gate, when to soft-reset, pacing, UI) belong to the
  * caller.
  *
  * Typical use:
  *   a8_options o; a8_default_options(&o); o.clock_ms = 160; o.lang = A8_LANG_ZH;
- *   a8_engine *e = a8_create("models", &o);           // loads the bins (~2 s)
+ *   a8_engine *e = a8_create("models/audio8-160ms", &o); // loads packaged model resources
  *   a8_reset(e);                                       // new session
  *   while (have_audio) { a8_feed(e, pcm, n); n_tok = a8_read_tokens(e, toks, cap); ... }
  *   a8_finish(e, -1); a8_read_tokens(...);             // end of input: drain the last tokens
@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-#define A8_VERSION "0.7.2-dev3"
+#define A8_VERSION "0.7.2"
 
 #if defined(__GNUC__)
 #define A8_API __attribute__((visibility("default")))

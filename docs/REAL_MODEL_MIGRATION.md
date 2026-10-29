@@ -5,7 +5,7 @@ under APLUX-Pandora. QNN version and SoC are package-directory dimensions, such 
 `targets/qcs8550_qnn248/`. Both models use the same [SDK and Demo repository](https://github.com/APLUX-Pandora/audio8-asr-infinite-demo).
 The Pandora page slug remains `live-transcribe-01`; historical repositories and tags retain their original content.
 
-## Current Python API: SDK 0.7.0
+## Current Python API: SDK 0.7.2
 
 The old `Engine` interface and identity-renamed Python aliases are not provided by the current SDK.
 Install the SDK into your application's venv, then use `ASRModel`:
@@ -17,7 +17,7 @@ python -m pip install /path/to/audio8-asr-infinite-demo/sdk
 ```python
 from audio8_asr import ASRModel
 
-with ASRModel.from_pretrained("models/qnn248_qcs8550") as model:
+with ASRModel.from_pretrained("models/audio8-160ms") as model:
     result = model.transcribe("examples/audio/jobs_keynote_10min_16k.flac", language="en")
     print(result.text, result.finish_reason)
 ```
@@ -46,10 +46,10 @@ The old identity-renamed ABI is historical; do not mix files across the naming o
 - [APLUX-Pandora/Audio8-ASR-Infinite-80ms](https://huggingface.co/APLUX-Pandora/Audio8-ASR-Infinite-80ms)
 
 Follow [model setup](MODEL_SETUP.md) to download a complete SoC package at a fixed revision
-and check its SHA256SUMS. Packages retain manifests, tokenizer, shared tensors, prefix caches,
-applicable licenses and a brief README linking to GitHub. Full SDK/API/example/Web instructions
+and check its SHA256SUMS. Packages contain models.json, tokenizer, common tensors, prefix caches,
+LICENSES/ and NOTICE, plus only the downloaded SoC target. The HF model card links to GitHub. Full SDK/API/example/Web instructions
 are maintained in the GitHub repository.
 
-The resource migration preserves accepted model bytes. SDK 0.7.0 uses the existing single-file
+The resource migration preserves accepted model bytes. SDK 0.7.2 uses models.json version 2 with the existing single-file
 prefix-cache layout; old 0.4.x per-layer packages are incompatible. The API and package must be
 validated together for the target board/runtime; changing a repository name does not qualify a new platform.

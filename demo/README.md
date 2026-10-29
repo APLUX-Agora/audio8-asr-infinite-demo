@@ -178,7 +178,7 @@ the Reload model button appears when the server reports an engine failure.
 
 The repository-root `requirements.txt` installs `./sdk` into this Demo's selected `.venv`.
 Web and Python examples import that installed package, without adding SDK source directories to
-`sys.path`. The package includes native SDK **0.7.2-dev3**; its Python distribution version is **0.7.2.dev3** (development delivery). The launcher still discovers this checkout's `models/` or uses `--models` / `A8_MODELS`.
+`sys.path`. The package includes native SDK **0.7.2**; its Python distribution version is **0.7.2**. The launcher still discovers this checkout's `models/` or uses `--models` / `A8_MODELS`.
 Model/runtime setup remains separate; see [Python installation](../sdk/PYTHON_PACKAGE.md).
 
 ## Silence-gate asset
@@ -187,4 +187,4 @@ Silero VAD v5 is bundled at `demo/assets/silero_vad.onnx` with its MIT license. 
 
 ## Root models.json configuration
 
-SDK 0.7.2.dev3 (native 0.7.2-dev3) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](../sdk/MODEL_PACKAGE.md). Legacy manifests remain supported. Both clocks have matching QCS8550 / Ubuntu 22.04 SDK inference evidence; previous dev2 browser playback/transcription/EOF verification used 160ms. Other profiles remain untested.
+SDK 0.7.2 (native 0.7.2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](../sdk/MODEL_PACKAGE.md). Legacy manifests remain supported. Both 80ms and 160ms are qualified on QCS8550 / Ubuntu 22.04 / AidLite 2.5.0.284 / QNN 2.48 with CPython 3.10, 3.11 and 3.12. Other SoC NPU execution and Ubuntu releases remain untested.

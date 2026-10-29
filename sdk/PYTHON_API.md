@@ -7,7 +7,7 @@ python -m pip install ./sdk
 ```
 
 Then `from audio8_asr import ASRModel` works in your own application without `sys.path` changes.
-This integration candidate includes native SDK 0.7.2-dev3; Python distribution version is `0.7.2.dev3`. It is not a formal release.
+This release includes native SDK 0.7.2; Python distribution version is `0.7.2`.
 Use Python, native library and models from compatible deliveries. No model is downloaded by `from_pretrained`.
 
 ## Quick start
@@ -61,7 +61,7 @@ ASRModel.from_pretrained(model_dir=None, *, library=None, clock_ms=None,
                         replay_max_s=10.0)
 ```
 
-Request-language, budget and final-audio controls were introduced in native SDK 0.7.0. The current models.json version 2 delivery requires the matched native **0.7.2-dev3** / Python **0.7.2.dev3** pair. `clock_ms=None` selects an installed clock (160 first, then 80). Explicit clock must exist. Other options preserve native rolling, stable-row, semantic EOT and replay controls; they are not cross-model features. `stable_rows=-1` uses native defaults; `roll_s=0` disables rolling and therefore retains native context-capacity limits. `sdk_version`, `info` (copy) and `stats()` (last owned-call snapshot) expose advanced diagnostics.
+Request-language, budget and final-audio controls were introduced in native SDK 0.7.0. The current models.json version 2 delivery requires the matched native **0.7.2** / Python **0.7.2** pair. `clock_ms=None` selects an installed clock (160 first, then 80). Explicit clock must exist. Other options preserve native rolling, stable-row, semantic EOT and replay controls; they are not cross-model features. `stable_rows=-1` uses native defaults; `roll_s=0` disables rolling and therefore retains native context-capacity limits. `sdk_version`, `info` (copy) and `stats()` (last owned-call snapshot) expose advanced diagnostics.
 
 - `language=None` defaults to Chinese; `"zh"`/`"en"` select native prefix state per request. `"auto"` is unsupported. Result language reports the selected language, not detected speech.
 - Free-text `prompt` is unsupported, including empty string.
@@ -91,7 +91,7 @@ Advanced integrations can inspect `stream.last_tokens` (copied token ID/is_text/
 
 ## Root models.json configuration
 
-SDK 0.7.2.dev3 (native 0.7.2-dev3) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Both audio clocks were tested on QCS8550 / Ubuntu22.04 with CPython3.10,3.11 and3.12.
+SDK 0.7.2 (native 0.7.2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Both audio clocks were tested on QCS8550 / Ubuntu22.04 with CPython3.10,3.11 and3.12.
 
 ### Package resource inspection
 

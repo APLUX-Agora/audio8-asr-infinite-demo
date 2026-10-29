@@ -6,8 +6,8 @@ Use the [Python API reference](PYTHON_API.md) for every method/result and the
 [Runnable examples](../examples/README.md) include Python file/stream programs and one C++ WAV program.
 There is no second SDK or separate C++ inference implementation.
 
-- SDK version: **0.7.2-dev2**.
-- Library SHA256: `28208ab4fcd8677162edff6191e673add348ae523251c0df41bccec857010bdc`.
+- SDK version: **0.7.2**.
+- Library SHA256: `cb479eb439fe95b79647e429333691a31dd98a64d0927ffc3a5aeea0a9ce3a6e`.
 - Platform: Linux AArch64, AidLite/QNN2.48 and matching board BSP/driver.
 - Current Hugging Face model packages contain single-file prefix caches and the declared matching hotword tokenizer.
 - ICU70.1 code and Unicode data are embedded; no system ICU installation is required.
@@ -22,7 +22,7 @@ python -m pip check
 ```
 
 You can then import `audio8_asr` from another directory without repository import-path changes.
-The Python distribution is `audio8-asr-infinite-sdk==0.7.2.dev3`, carrying native SDK 0.7.2-dev3.
+The Python distribution is `audio8-asr-infinite-sdk==0.7.2`, carrying native SDK 0.7.2.
 Its native library is installed inside the Python package; the original `sdk/lib/` library remains the
 C/C++ integration artifact. Both have the same SHA256. Models are downloaded separately and selected
 with an explicit package root or `A8_MODELS`. AidLite/QNN and the board BSP remain external prerequisites.
@@ -31,9 +31,9 @@ See [package details](PYTHON_PACKAGE.md) and [Python API](PYTHON_API.md).
 ## Compatibility
 
 This SDK is tested on QCS8550 / Ubuntu22.04 with the 80ms and 160ms models.
-Historical SDK 0.6.1 userspace checks do not qualify this native 0.7.2-dev3 build on Ubuntu 24.04/26.04.
+Historical SDK 0.6.1 userspace checks do not qualify this native 0.7.2 build on Ubuntu 24.04/26.04.
 Other chip targets and Ubuntu releases require their own qualification before broader claims.
-CPython **3.10, 3.11 and 3.12** passed matching independent SDK inference checks with both clocks. Previous dev2 browser playback/transcription/EOF verification used 160ms; older three-version Web checks used a previous native build and do not qualify the full current matrix. Choose one interpreter with matching `venv` support and create this checkout's `.venv`; see [installation](../README.md#1-install). This does not extend the OS/BSP/NPU test scope. AidLite/QNN remain external prerequisites;
+CPython **3.10, 3.11 and 3.12** passed independent SDK inference, streaming, Web playback/transcription/EOF and idle/active SIGTERM/SIGINT checks with both clocks. Choose one interpreter with matching `venv` support and create this checkout's `.venv`; see [installation](../README.md#1-install). This does not extend the OS/BSP/NPU test scope. AidLite/QNN remain external prerequisites;
 see the [native environment and loader requirements](NATIVE_INTEGRATION.md#target-and-linking).
 
 ## C API and Python integration
@@ -45,7 +45,7 @@ Runnable [Python and C++ examples](../examples/README.md) use those public inter
 
 A session follows create -> reset -> optional hotwords -> feed/drain -> finish/drain -> close.
 Do not call soft_reset or feed after finish without resetting. Signal handlers should request a stop;
-wait for synchronous native work before destruction. The library does not perform file IO or own a worker.
+wait for synchronous native work before destruction. The native library consumes PCM and reads its model resources from disk. Its inference calls are synchronous; application workers and media playback belong to the caller.
 
 ## Environment variables
 
@@ -66,6 +66,6 @@ portions keep their own terms. See [licensing scope](../LICENSING.md),
 预编译 `.so` 中阿加犀专有部分采用 Pandora 自有许可，业务层 Apache-2.0 不覆盖这些专有部分；
 阿加犀的 C 头文件、Python 绑定仍为 Apache-2.0，第三方部分保留各自许可。
 
-## models.json integration candidate
+## models.json packages
 
-Python package 0.7.2.dev3 contains native 0.7.2-dev3. This is an integration candidate, not a formal SDK release. Pass the package root containing models.json; legacy manifest formats remain supported. See [model setup](../docs/MODEL_SETUP.md) and [candidate contract](MODEL_PACKAGE.md).
+Python package 0.7.2 contains native 0.7.2. Pass the package root containing models.json; legacy manifest formats remain supported. See [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md).
