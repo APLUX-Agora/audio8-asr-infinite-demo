@@ -91,7 +91,7 @@ Advanced integrations can inspect `stream.last_tokens` (copied token ID/is_text/
 
 ## Root models.json configuration
 
-SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.
+SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Both audio clocks were tested on QCS8550 / Ubuntu22.04 with CPython3.10,3.11 and3.12.
 
 ### Package resource inspection
 

@@ -22,7 +22,7 @@ python -m pip check
 ```
 
 You can then import `audio8_asr` from another directory without repository import-path changes.
-The Python distribution is `audio8-asr-infinite-sdk==0.7.1`, carrying native SDK 0.7.1.
+The Python distribution is `audio8-asr-infinite-sdk==0.7.2.dev2`, carrying native SDK 0.7.2-dev2.
 Its native library is installed inside the Python package; the original `sdk/lib/` library remains the
 C/C++ integration artifact. Both have the same SHA256. Models are downloaded separately and selected
 with an explicit package root or `A8_MODELS`. AidLite/QNN and the board BSP remain external prerequisites.
@@ -30,7 +30,7 @@ See [package details](PYTHON_PACKAGE.md) and [Python API](PYTHON_API.md).
 
 ## Compatibility
 
-This SDK is tested on QCS8550 / Ubuntu22.04 with the160ms model.
+This SDK is tested on QCS8550 / Ubuntu22.04 with the 80ms and 160ms models.
 Prior SDK0.6.1 userspace checks do not qualify the new0.7.0 binary on Ubuntu24.04/26.04.
 Other clocks, chip targets and Ubuntu releases require their own qualification before broader claims.
 CPython **3.10, 3.11 and 3.12** were verified for the Python SDK, examples and Web Demo with this same SDK and model package. Choose one interpreter with matching `venv` support and create this checkout's `.venv`; see [installation](../README.md#1-install). This does not extend the OS/BSP/NPU test scope. AidLite/QNN remain external prerequisites;

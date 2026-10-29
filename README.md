@@ -14,7 +14,7 @@ SDK development version 0.7.2.dev2 supports the configurable models.json version
 
 ## 1. Install
 
-Choose one installed CPython interpreter: **3.10, 3.11 or 3.12**. All three were verified on QCS8550 / Ubuntu 22.04 AArch64 with the same SDK and model package. The selected interpreter must provide the `venv` module; the `python3-venv` package supplies it for Ubuntu's default Python. Validation used the 160ms model; see [SDK compatibility](sdk/README.md#compatibility).
+Choose one installed CPython interpreter: **3.10, 3.11 or 3.12**. All three were verified on QCS8550 / Ubuntu 22.04 AArch64 with the same SDK and model package. The selected interpreter must provide the `venv` module; the `python3-venv` package supplies it for Ubuntu's default Python. Validation covered both the 80ms and 160ms models; see [SDK compatibility](sdk/README.md#compatibility).
 
 ```bash
 git clone https://github.com/APLUX-Pandora/audio8-asr-infinite-demo.git
