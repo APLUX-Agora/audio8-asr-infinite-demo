@@ -32,4 +32,4 @@ Applicable upstream and third-party terms remain in the included notices and lic
 
 ## Root models.json configuration
 
-SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. This configuration-driven version was tested on QCS8550 / Ubuntu22.04 with both80ms and160ms using CPython3.10,3.11 and3.12.
+SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. This configuration-driven version was tested on QCS8550 / Ubuntu22.04 with both80ms and160ms using CPython3.10,3.11 and3.12.

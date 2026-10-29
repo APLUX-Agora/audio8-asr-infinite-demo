@@ -4,9 +4,8 @@ build/
 __pycache__/
 *.pyc
 *.log
-# model files are not committed, only the README
+# Downloaded model resources and HF cards are runtime data
 models/*
-!models/README.md
 demo/media/uploads/
 
 *.egg-info/

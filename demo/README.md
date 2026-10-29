@@ -11,21 +11,17 @@ player unmuted: the page sends the sound it plays.
 
 ## Start
 
-The SDK library comes prebuilt in `sdk/lib/` ([../sdk/README.md](../sdk/README.md)). Download the model package of
-your board's chip into `models/` ([../models/README.md](../models/README.md)); `$SOC` below is its folder, e.g.
-`qnn248_<chip>`.
+Install this Demo's `.venv` and dependencies using the [main README](../README.md#1-install). Download either variant using the complete [model setup](../docs/MODEL_SETUP.md) instructions. Start one instance using its package root:
 
 ```bash
-demo/run.sh --port 8765                                           # foreground
-setsid -f demo/run.sh --port 8765 > demo.log 2>&1 < /dev/null     # background
+A8_CLOCK_MS=160 demo/run.sh --models models/audio8-160ms --port 8765
+# Alternatively, stop the server above before using the same port for 80ms:
+A8_CLOCK_MS=80 demo/run.sh --models models/audio8-80ms --port 8765
 ```
 
-Create this demo's `.venv` and install requirements as shown in the main README. The launcher selects
-`.venv/bin/python` explicitly; it does not depend on shell activation or fall back to global Python.
-With one chip package under `models/`, no path option is needed. A flat package at `models/manifest.json` also works.
-For multiple packages, pass `--models models/$SOC` (the directory directly containing the manifest). CLI `--models`
-overrides `A8_MODELS`; explicit relative paths use the caller's working directory. Automatic discovery uses this
-checkout's `models/` even when the launcher is invoked from another directory.
+For background operation, use `setsid -f` before the launcher (and put the environment assignment before `setsid`), redirect stdout/stderr and retain the process identity for shutdown. The launcher uses this checkout's `.venv/bin/python`; it does not require shell activation or fall back to global Python.
+
+Each explicit root directly contains models.json. Without `--models`/`A8_MODELS`, a flat package or unique immediate child of checkout models/ is discovered. Multiple model roots require explicit selection. CLI `--models` overrides `A8_MODELS`; explicit relative paths use the caller's working directory. The service only offers clocks in the selected package; restart with the other root to change variants.
 
 Open `http://<board-ip>:8765/`.
 
@@ -33,8 +29,8 @@ Open `http://<board-ip>:8765/`.
 |---|---|---|
 | `A8_CLOCK_MS` | the installed one (160 first) | audio clock at start-up: 160 or 80 ms; the page offers the installed clocks only |
 | `A8_LANG` | en | transcription language at start-up (en / zh); the page switches it when a video is selected |
-| `A8_MODELS` | automatic discovery | explicit package root; must directly contain manifest.json; overridden by `--models` |
-| `AUDIO8_ASR_LIB` | `libaudio8_asr.so` in `sdk/lib/` or `sdk/build/` | the .so to load |
+| `A8_MODELS` | automatic discovery | explicit package root; must directly contain models.json (or legacy manifest.json); overridden by `--models` |
+| `AUDIO8_ASR_LIB` | the matched library inside the installed Python SDK | the .so to load |
 | `A8_RECOVER` | reset | soft-reset policy; `off` disables it |
 | `A8_RESET_AFTER_S` / `A8_RESET_QUIET_S` / `A8_RESET_BACKOFF_S` | 2 / 2 / 10 | soft-reset trigger parameters (`reset_policy.py`) |
 
@@ -151,8 +147,7 @@ with attribution retained. See [source, license and changes](../docs/MEDIA_ATTRI
 
 Expand Hotwords, enable the checkbox and enter comma- or newline-separated words/phrases. Default is off and the word list is empty. Changes apply on the next Start or seek, not halfway through the current session. Advanced controls expose top-k and first/continuation boosts. Prefer a short list relevant to the content; ordinary words can be changed incorrectly.
 
-SDK 0.7.1 and current Hugging Face packages include the matching optional tokenizer.json. The SDK resolves
-manifest extras.tokenizer or the package-root file automatically. No separate tokenizer or system ICU installation is required.
+Current models.json version 2 packages declare the matching tokenizer resource. The Python SDK reads its configured path; historical manifest packages use their documented compatibility behavior. No separate tokenizer or system ICU installation is required.
 See the [Python API](../sdk/PYTHON_API.md)
 for limits and behavior.
 
@@ -183,8 +178,7 @@ the Reload model button appears when the server reports an engine failure.
 
 The repository-root `requirements.txt` installs `./sdk` into this Demo's selected `.venv`.
 Web and Python examples import that installed package, without adding SDK source directories to
-`sys.path`. The package includes the same precompiled SDK 0.7.1; its Python distribution version
-is 0.7.1. The launcher still discovers this checkout's `models/` or uses `--models` / `A8_MODELS`.
+`sys.path`. The package includes native SDK **0.7.2-dev2**; its Python distribution version is **0.7.2.dev2** (development delivery). The launcher still discovers this checkout's `models/` or uses `--models` / `A8_MODELS`.
 Model/runtime setup remains separate; see [Python installation](../sdk/PYTHON_PACKAGE.md).
 
 ## Silence-gate asset
@@ -193,4 +187,4 @@ Silero VAD v5 is bundled at `demo/assets/silero_vad.onnx` with its MIT license. 
 
 ## Root models.json configuration
 
-SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](../sdk/MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.
+SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](../sdk/MODEL_PACKAGE.md). Legacy manifests remain supported. Both clocks have matching QCS8550 / Ubuntu 22.04 SDK inference evidence; current browser playback/transcription/EOF verification used 160ms. Other profiles remain untested.

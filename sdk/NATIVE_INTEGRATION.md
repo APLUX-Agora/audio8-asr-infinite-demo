@@ -17,7 +17,9 @@ Build the [complete example](../examples/cpp/transcribe_file.cpp) on the board, 
 ```bash
 cmake -S examples/cpp -B examples/cpp/build -DCMAKE_BUILD_TYPE=Release
 cmake --build examples/cpp/build -j2
-examples/cpp/build/transcribe_file --models models/qnn248_qcs8550 --lang en input.wav
+examples/cpp/build/transcribe_file --models models/audio8-160ms --clock-ms 160 --lang en input.wav
+# Alternatively, after downloading the 80ms package:
+examples/cpp/build/transcribe_file --models models/audio8-80ms --clock-ms 80 --lang en input.wav
 ```
 
 The build needs a C++11 compiler and CMake 3.16+, installed separately if absent (`sudo apt install g++ cmake`).
@@ -35,7 +37,7 @@ An equivalent direct build (repository root) is:
 ```bash
 g++ -std=c++11 -O2 -Wall -Wextra -Wpedantic examples/cpp/transcribe_file.cpp \
   -Isdk/include -Lsdk/lib -laudio8_asr -Wl,-rpath,'$ORIGIN/sdk/lib' -o audio8-example
-./audio8-example --models models/qnn248_qcs8550 --lang en input.wav
+./audio8-example --models models/audio8-160ms --clock-ms 160 --lang en input.wav
 ```
 
 The `$ORIGIN` above is the executable's directory, not the shell's current directory. CMake embeds the selected
@@ -75,7 +77,7 @@ Use the declarations and field comments in the header as the exact layout; do no
 | `a8_stats` | Audio seconds; emitted token count; absolute LM position; trim/reset counts; cumulative stage milliseconds. Full field names, integer widths and units are defined in [the public header](include/audio8_asr.h). Python `stats()` returns a copy of these diagnostic fields; task results are documented under [Transcription](PYTHON_API.md#transcription). |
 
 Do not change an engine's creation options in-place. Use the package for the selected clock/SoC. The 80ms and
-160ms resources remain independent, with complete manifests and checksums; see [model placement](../models/README.md).
+160ms resources remain independent, with complete manifests and checksums; see [model placement](../docs/MODEL_SETUP.md).
 
 ## Function reference
 
@@ -122,12 +124,7 @@ Normal stdout is transcript UTF-8 bytes plus a newline. Diagnostics go to stderr
 
 ## Compatibility
 
-The delivered SDK is **0.7.0**. Current NPU qualification covers QCS8550 / Ubuntu 22.04 / 160ms.
-CPython 3.10, 3.11 and 3.12 were verified within that environment. Other clocks, SoCs and
-Ubuntu releases require their own qualification before broader claims.
-Historical SDK 0.6.1 userspace checks on Ubuntu 22.04/24.04/26.04 do not qualify the new 0.7.0 binary.
-AidLite/QNN and the board BSP remain external platform requirements. Keep the model, runtime and
-SDK versions matched; see [SDK environment and support](README.md).
+The delivered native SDK is **0.7.2-dev2**, paired with Python **0.7.2.dev2** and models.json version 2. This is a development delivery, not a formal SDK release. Both clocks' SDK inference was verified on QCS8550 / Ubuntu 22.04 / QNN 2.48, including CPython 3.10, 3.11 and 3.12. Current browser playback/transcription/EOF verification used 160ms; other chip targets and Ubuntu releases remain unqualified. Historical SDK checks do not qualify a different native build. AidLite/QNN and the board BSP remain external requirements. See [model setup](../docs/MODEL_SETUP.md).
 
 ## SDK 0.7.0 request controls
 
@@ -143,4 +140,4 @@ After a live `a8_feed` exhausts the cap, state is terminal `2`; do not call nati
 
 ## Root models.json configuration
 
-SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.
+SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Both clocks have matching QCS8550 / Ubuntu 22.04 SDK inference evidence; current browser playback/transcription/EOF verification used 160ms. Other profiles remain untested.

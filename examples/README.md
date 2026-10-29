@@ -1,6 +1,6 @@
 # SDK examples
 
-Run from the checkout root after [installation](../README.md#1-install) and [model placement](../models/README.md).
+Run from the checkout root after [installation](../README.md#1-install) and [model placement](../docs/MODEL_SETUP.md).
 The Python programs use this Demo's `.venv` and its pip-installed SDK; they do not import SDK files from the checkout. They use the editable SDK audio adapter for WAV/FLAC/MP3, mono/stereo conversion and 16kHz resampling. More than two channels require explicit selection in application code. Their inference calls use the shipped Python SDK; the C++ example calls the same library's C ABI.
 
 ## Python file transcription
@@ -19,7 +19,7 @@ The gate loads the bundled `demo/assets/silero_vad.onnx`; it does not require a 
 
 | Option | Program | Meaning |
 | --- | --- | --- |
-| `--models PACKAGE` | Both | Exact root containing manifest.json; overrides A8_MODELS. Otherwise discover one package in checkout models/. |
+| `--models PACKAGE` | Both | Exact root containing models.json (or a supported legacy manifest.json); overrides A8_MODELS. Otherwise discover one package in checkout models/. |
 | `--clock-ms 160` or `80` | Both | Select the clock installed in that package; default installed clock,160 preferred. |
 | `--lang en` or `zh` | Both | Explicit language. File example defaults to the model default zh; streaming presentation example defaults to en. |
 | `--max-new-tokens N` | transcribe_file | Positive generation cap, including controls; result reports stop/length. |
@@ -49,7 +49,9 @@ it is not a new C++ SDK. Input is strictly mono16kHz PCM16 WAV. Build and run on
 cmake -S examples/cpp -B examples/cpp/build -DCMAKE_BUILD_TYPE=Release
 cmake --build examples/cpp/build -j2
 ffmpeg -i examples/audio/jobs_keynote_10min_16k.flac -ac 1 -ar 16000 -c:a pcm_s16le input.wav
-examples/cpp/build/transcribe_file --models models/qnn248_qcs8550 --lang en input.wav
+examples/cpp/build/transcribe_file --models models/audio8-160ms --clock-ms 160 --lang en input.wav
+# Alternatively, after downloading the 80ms package:
+examples/cpp/build/transcribe_file --models models/audio8-80ms --clock-ms 80 --lang en input.wav
 ```
 
 Install `g++` and `cmake` if absent. `--clock-ms`, `--lang`, repeated `--hotword` and `--tokenizer` select the
@@ -70,4 +72,4 @@ SDK/runtime pair. Example output/performance is input/platform dependent; no fix
 
 ## Root models.json configuration
 
-SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](../sdk/MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.
+SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](../sdk/MODEL_PACKAGE.md). Legacy manifests remain supported. Both clocks have matching QCS8550 / Ubuntu 22.04 SDK inference evidence; current browser playback/transcription/EOF verification used 160ms. Other profiles remain untested.

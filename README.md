@@ -32,23 +32,25 @@ For integration in another application, see [SDK installation](sdk/PYTHON_PACKAG
 
 ## 2. Get the model
 
-Download common resources and the **160ms / QCS8550** target into the same `models/` directory:
+The recommended configuration is **160ms / QCS8550**:
 
 ```bash
 .venv/bin/python -m pip install huggingface_hub
 REPO=APLUX-Pandora/Audio8-ASR-Infinite-160ms
 REV=a3f645da5a4ab0583b4b1376ff76c6f56b91426f
-.venv/bin/hf download "$REPO" --revision "$REV" --local-dir models --exclude "targets/*"
-.venv/bin/hf download "$REPO" --revision "$REV" --local-dir models --include "targets/qcs8550_qnn248/*"
+DEST=models/audio8-160ms
+TARGET=qcs8550_qnn248
+.venv/bin/hf download "$REPO" --revision "$REV" --local-dir "$DEST" --exclude "targets/*"
+.venv/bin/hf download "$REPO" --revision "$REV" --local-dir "$DEST" --include "targets/$TARGET/*"
 ```
 
-The package entry point is `models/models.json`. Other SoC graphs are not downloaded.
-Silero VAD is bundled with the Demo. For other SoCs, 80ms and version compatibility, see [model setup](models/README.md).
+The entry point is `models/audio8-160ms/models.json`; other SoC graphs are not downloaded.
+For complete **80ms and 160ms** download/startup/example steps and other SoCs, see [model setup](docs/MODEL_SETUP.md). Silero VAD is bundled with the Demo.
 
 ## 3. Run the Web Demo
 
 ```bash
-demo/run.sh --port 8765
+A8_CLOCK_MS=160 demo/run.sh --models models/audio8-160ms --port 8765
 ```
 
 Open `http://<board-ip>:8765/`. Select a built-in video or upload your own.
@@ -57,7 +59,7 @@ See the [Web guide](demo/README.md) for hotwords and other controls.
 ## 4. Run a Python example
 
 ```bash
-.venv/bin/python examples/python/transcribe_file.py examples/audio/jobs_keynote_10min_16k.flac --lang en
+.venv/bin/python examples/python/transcribe_file.py examples/audio/jobs_keynote_10min_16k.flac --models models/audio8-160ms --clock-ms 160 --lang en
 ```
 
 For streaming, Chinese audio and the compilable C++ example, see [examples](examples/README.md).

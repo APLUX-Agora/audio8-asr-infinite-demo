@@ -2,7 +2,7 @@
 
 Audio8-ASR-Infinite-80ms and Audio8-ASR-Infinite-160ms have separate Hugging Face repositories
 under APLUX-Pandora. QNN version and SoC are package-directory dimensions, such as
-`qnn248_qcs8550/`. Both models use the same [SDK and Demo repository](https://github.com/APLUX-Pandora/audio8-asr-infinite-demo).
+`targets/qcs8550_qnn248/`. Both models use the same [SDK and Demo repository](https://github.com/APLUX-Pandora/audio8-asr-infinite-demo).
 The Pandora page slug remains `live-transcribe-01`; historical repositories and tags retain their original content.
 
 ## Current Python API: SDK 0.7.0
@@ -45,7 +45,7 @@ The old identity-renamed ABI is historical; do not mix files across the naming o
 - [APLUX-Pandora/Audio8-ASR-Infinite-160ms](https://huggingface.co/APLUX-Pandora/Audio8-ASR-Infinite-160ms)
 - [APLUX-Pandora/Audio8-ASR-Infinite-80ms](https://huggingface.co/APLUX-Pandora/Audio8-ASR-Infinite-80ms)
 
-Follow [model setup](../models/README.md) to download a complete SoC package at a fixed revision
+Follow [model setup](MODEL_SETUP.md) to download a complete SoC package at a fixed revision
 and check its SHA256SUMS. Packages retain manifests, tokenizer, shared tensors, prefix caches,
 applicable licenses and a brief README linking to GitHub. Full SDK/API/example/Web instructions
 are maintained in the GitHub repository.
