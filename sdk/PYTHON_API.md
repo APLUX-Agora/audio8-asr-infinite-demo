@@ -7,7 +7,7 @@ python -m pip install ./sdk
 ```
 
 Then `from audio8_asr import ASRModel` works in your own application without `sys.path` changes.
-This integration candidate includes native SDK 0.7.2-dev; Python distribution version is `0.7.2.dev1`. It is not a formal release.
+This integration candidate includes native SDK 0.7.2-dev2; Python distribution version is `0.7.2.dev2`. It is not a formal release.
 Use Python, native library and models from compatible deliveries. No model is downloaded by `from_pretrained`.
 
 ## Quick start
@@ -89,9 +89,9 @@ with ASRModel.from_pretrained("models") as model:
 
 Advanced integrations can inspect `stream.last_tokens` (copied token ID/is_text/audio_t/EOT records), `token_bytes(id)`, `text_of(ids)`, `eot_probs()`, `info`, `stats()`, `clock_s`, and `samples_per_token`. `soft_reset(replay_from_s)` replays cached rows and returns copied replay tokens; those tokens are appended to the stream snapshot. Applications using replay own endpoint/timestamp/presentation policy; the Web demo's ResetPolicy remains outside inference. These controls are model-specific and are not required for ordinary transcription.
 
-## Root models.json integration candidate
+## Root models.json configuration
 
-Candidate 0.7.2.dev1 (native 0.7.2-dev) adds the flat HF package entry point. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.
+SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.
 
 ### Package resource inspection
 

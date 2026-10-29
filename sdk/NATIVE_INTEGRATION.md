@@ -141,6 +141,6 @@ These additive C ABI functions underpin the new Python task API. Existing C call
 
 After a live `a8_feed` exhausts the cap, state is terminal `2`; do not call native finish again. A new request must begin/reset before more audio. A finite final-audio call returns state `1` if all required clocks finish exactly at the cap, or `2` if the cap blocks required work. No text slicing implements this budget. `a8_reset` restores the currently selected language and the original uncapped legacy session behavior. Language switching changes only existing prefix/cache state, not weights. All calls remain synchronous and must not race destroy. The Python layer additionally reserves one recording and caches its idempotent finish result; raw C finish is still once-only.
 
-## Root models.json integration candidate
+## Root models.json configuration
 
-Candidate 0.7.2.dev1 (native 0.7.2-dev) adds the flat HF package entry point. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.
+SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.

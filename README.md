@@ -10,14 +10,14 @@ Streaming speech recognition on Qualcomm devices, powered by Edge0's [Audio8-ASR
 
 Source: Lorna Mitchell, FOSDEM 2025, **CC BY 2.0 BE**. Original credits are retained; the excerpt is trimmed and transcoded. [Source, license and changes](docs/MEDIA_ATTRIBUTION.md).
 
-> Integration candidate 0.7.2.dev1: exercises the new models.json resource layout; this is not a formal SDK release.
+SDK development version 0.7.2.dev2 supports the configurable models.json version 2 package.
 
 ## 1. Install
 
 Choose one installed CPython interpreter: **3.10, 3.11 or 3.12**. All three were verified on QCS8550 / Ubuntu 22.04 AArch64 with the same SDK and model package. The selected interpreter must provide the `venv` module; the `python3-venv` package supplies it for Ubuntu's default Python. Validation used the 160ms model; see [SDK compatibility](sdk/README.md#compatibility).
 
 ```bash
-git clone --branch codex/audio8-models-json https://github.com/APLUX-Pandora/audio8-asr-infinite-demo.git
+git clone https://github.com/APLUX-Pandora/audio8-asr-infinite-demo.git
 cd audio8-asr-infinite-demo
 sudo aid-pkg install aidlite-sdk aidlite-qnn248
 sudo apt install ffmpeg libsndfile1 python3-venv
@@ -37,7 +37,7 @@ Download common resources and the **160ms / QCS8550** target into the same `mode
 ```bash
 .venv/bin/python -m pip install huggingface_hub
 REPO=APLUX-Pandora/Audio8-ASR-Infinite-160ms
-REV=03a93fff6ce4993a701d8c172261355cbe6f1217
+REV=a3f645da5a4ab0583b4b1376ff76c6f56b91426f
 .venv/bin/hf download "$REPO" --revision "$REV" --local-dir models --exclude "targets/*"
 .venv/bin/hf download "$REPO" --revision "$REV" --local-dir models --include "targets/qcs8550_qnn248/*"
 ```

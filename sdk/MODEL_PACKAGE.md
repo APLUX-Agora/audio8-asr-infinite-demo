@@ -1,25 +1,57 @@
-# Audio8 root models.json integration candidate
+# Configurable models.json package
 
-This contract is being exercised against actual HF downloads and the native, installed Python SDK and Demo. It is not yet the universal Pandora schema.
+The root models.json is the interface between HF resources and the native/Python SDK. Version2 declares all paths; no resource registry of implicit filenames or per-target target.json is required.
 
 ```json
 {
-  "format_version": 1,
+  "format_version": 2,
   "model_name": "Audio8-ASR-Infinite-160ms",
   "audio_clock_ms": 160,
   "targets": [
-    {"soc": "qcs8550", "qnn_version": "2.48", "directory": "targets/qcs8550_qnn248"}
+    {
+      "soc": "qcs8550",
+      "qnn_version": "2.48",
+      "directory": "targets/qcs8550_qnn248",
+      "files": {
+        "encoder": "targets/qcs8550_qnn248/encoder.aidem",
+        "adapter": "targets/qcs8550_qnn248/adapter.aidem",
+        "decoder_1": "targets/qcs8550_qnn248/decoder_1.aidem",
+        "decoder_2": "targets/qcs8550_qnn248/decoder_2.aidem"
+      }
+    }
   ],
-  "tensor_metadata": {
-    "embedding.bin": {"dtype": "float32-le", "shape": [151936, 2048], "layout": "row-major"}
+  "resources": {
+    "frontend_config": "frontend/config.json",
+    "audio_constants": "frontend/rows_const.npy",
+    "mel_filters": "mel_filters.npy",
+    "vocabulary": "token_bytes.json",
+    "tokenizer": "tokenizer.json",
+    "rotation": "rotation.npy",
+    "token_vectors": {
+      "path": "embedding.bin",
+      "dtype": "float32-le",
+      "shape": [
+        151936,
+        2048
+      ],
+      "layout": "row-major"
+    },
+    "prefix": {
+      "encoder": "prefix/encoder.bin",
+      "decoder_zh": "prefix/decoder_zh.bin",
+      "decoder_en": "prefix/decoder_en.bin"
+    },
+    "semantic_vad": {
+      "weight": "semantic_vad/weight.npy",
+      "bias": "semantic_vad/bias.npy",
+      "config": "semantic_vad/config.json"
+    }
   }
 }
 ```
 
-The index declares all available targets; a local installation may contain only one target's graphs. The fixed root paths and Audio8 graph names form this model's packaging convention, not a requirement for every future Pandora model. No separate shared-file registry, per-target descriptor, file-size field or hash field is used. SHA256SUMS owns hashes. Raw embedding metadata is required because the BIN has no header.
+All paths are relative to the model-package root, including target graph paths. Resource keys express semantic purposes rather than filenames. Ordinary resources use strings; token_vectors additionally declares its raw binary representation. Hashes are maintained exclusively in SHA256SUMS. Target directory is an explicitly configured grouping used for selective download/completeness; graphs must remain within that directory. Renaming common files, graph files or the target directory only requires updating configuration and checksums.
 
-The SDK validates schema/model identity/clock and supported target metadata, selects one complete installed target (or A8_TARGET), resolves package-relative paths without permitting escape, and validates common resources and raw embedding byte length before allocating the inference engine. It does not infer hardware compatibility from the directory name. A8_TARGET is process-level startup configuration, not a per-request switch.
+A local installation may download only one declared target. The SDK validates model identity, audio clock and supported SoC/QNN metadata; selects one complete target or an explicit A8_TARGET; rejects missing roles, invalid/escaping paths, ambiguous targets and incorrect raw-vector data; then loads all files from the configuration. There are no silent filename fallbacks. A8_TARGET is process-level startup configuration, not a per-request control, and it is not automatic hardware identification.
 
-The same layout contract is used by native C/C++, the installed Python SDK, examples and Web preflight. Python discovery and `model_files(model_dir, clock_ms)` are public packaging helpers. Web uses the latter for required-file checksum checks, while inference stays in the native SDK. Missing/ambiguous/wrong-target input is rejected explicitly; no temporary legacy manifest or extra model directory is generated.
-
-Existing manifest.json formats 1 and 2 are retained for old resources. If models.json is present it is authoritative; a broken new index is not hidden by silently using a legacy manifest. Schema version and raw tensor parameters must be checked before adding new fields or adopting this contract in another model.
+The same semantics are exercised in native C++, installed Python SDK, examples and Web preflight. Public model_files(model_dir, clock_ms) supplies resolved runtime paths to application preflight without implementing inference. C ABI and task APIs are unchanged. Legacy manifest formats1/2 are supported for old assets; prototype models.json format1 is intentionally rejected rather than silently ignoring its absent path declarations.

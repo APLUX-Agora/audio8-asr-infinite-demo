@@ -1,6 +1,6 @@
 {
-  "version": "0.7.2-dev",
+  "version": "0.7.2-dev2",
   "filename": "libaudio8_asr.so",
-  "sha256": "169f92c773426d96f9617904aa7f98e2ec7f139d542db754c6e5ae9896b206e4",
+  "sha256": "a5102a3a26f64b1295e806feeb1b152453d37ab5baa4bf163e4771a93163997c",
   "platform": "linux_aarch64"
 }

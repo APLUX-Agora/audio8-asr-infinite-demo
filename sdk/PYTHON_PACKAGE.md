@@ -30,6 +30,6 @@ the full Python API, C ABI integration, examples and the Web Demo. Python bindin
 APLUX proprietary parts of the bundled native library use the Pandora Model and SDK License.
 Applicable upstream and third-party terms remain in the included notices and licenses.
 
-## Root models.json integration candidate
+## Root models.json configuration
 
-Candidate 0.7.2.dev1 (native 0.7.2-dev) adds the flat HF package entry point. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.
+SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.

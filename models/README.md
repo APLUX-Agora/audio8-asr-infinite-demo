@@ -1,56 +1,25 @@
-# Model setup
+# Model resources
 
-This integration candidate uses the root `models.json` from HF. It supports the flat model package; SDK 0.7.1 uses its previous pinned resources instead. The candidate is not a formal SDK release.
-
-| Model | HF repository | Candidate revision |
-| --- | --- | --- |
-| 160ms | [Audio8-ASR-Infinite-160ms](https://huggingface.co/APLUX-Pandora/Audio8-ASR-Infinite-160ms) | `03a93fff6ce4993a701d8c172261355cbe6f1217` |
-| 80ms | [Audio8-ASR-Infinite-80ms](https://huggingface.co/APLUX-Pandora/Audio8-ASR-Infinite-80ms) | `ee036e11a7744164bfbc981ad353331cecc41692` |
-
-## Download for one SoC
-
-Run from this Demo checkout, using its own installed `.venv`:
+Download common resources and exactly the SoC target for your board into the same package root. Run from the Demo checkout using its installed .venv. SDK 0.7.2.dev2 supports models.json version 2, where all common-resource and graph paths are explicit configuration.
 
 ```bash
 .venv/bin/python -m pip install huggingface_hub
 REPO=APLUX-Pandora/Audio8-ASR-Infinite-160ms
-REV=03a93fff6ce4993a701d8c172261355cbe6f1217
+REV=a3f645da5a4ab0583b4b1376ff76c6f56b91426f
 DEST=models
 TARGET=qcs8550_qnn248
 .venv/bin/hf download "$REPO" --revision "$REV" --local-dir "$DEST" --exclude "targets/*"
 .venv/bin/hf download "$REPO" --revision "$REV" --local-dir "$DEST" --include "targets/$TARGET/*"
 ```
 
-Targets: `qcs8550_qnn248`, `qcs8625_qnn248`, `qcs8275_qnn248` (IQ8), `qcs9075_qnn248` (IQ9). Choose the target for your actual board. The SDK selects the unique completely installed target; that selection is not hardware identification. If multiple targets are installed, explicitly set `A8_TARGET=qcs8550_qnn248` before starting the application. Unknown or incomplete selections fail without falling back.
+For80ms use APLUX-Pandora/Audio8-ASR-Infinite-80ms. Targets are qcs8550_qnn248, qcs8625_qnn248, qcs8275_qnn248 (IQ8) and qcs9075_qnn248 (IQ9). Both commands must use the same revision; a fixed commit is preferable for reproducible applications. Repositories are maintained on main without extra branches or tags.
 
-The first command obtains root files plus frontend/, prefix/, semantic_vad/ and licenses; the second obtains only one target. Both commands must use the same fixed revision. The repository's existing access permissions apply; future public repositories use the same commands.
+The SDK reads models/models.json. Ordinary resources map purpose names to package-root-relative paths. Raw token_vectors also declare dtype/shape/layout. Each target declares SoC, QNN version, directory and explicit encoder/adapter/decoder graph paths. No resource filename or target directory is inferred from a conventional spelling. Missing roles/paths, an unsupported schema or multiple complete targets cause explicit errors. Use A8_TARGET=qcs8550_qnn248 at application startup to select among multiple installed targets; this selects a declared installation and does not detect hardware compatibility.
 
-```text
-models/
-  models.json
-  embedding.bin
-  tokenizer.json
-  token_bytes.json
-  mel_filters.npy
-  rotation.npy
-  frontend/
-  prefix/
-  semantic_vad/
-  targets/qcs8550_qnn248/
-    encoder.aidem
-    adapter.aidem
-    decoder_1.aidem
-    decoder_2.aidem
-    SHA256SUMS
-  LICENSES/
-  NOTICE
-  SHA256SUMS
-```
+Demo and examples use the installed SDK's root discovery. models.json takes precedence, otherwise legacy manifest.json remains supported. A unique immediate child package can be discovered; several model roots require an explicit --models or A8_MODELS selection. Keep80ms and160ms in separate roots; do not overlay them into the same destination. SDK installation outside a Demo requires an explicit model root and does not guess site-packages parents.
 
-## Package selection and checks
+SHA256SUMS owns hashes. `sha256sum --ignore-missing -c SHA256SUMS` verifies present files only, not required-file completeness. Web preflight resolves required resources through the SDK and verifies their checksums before model replacement. Native loading validates configuration/path containment and raw embedding size before graph allocation. Silero VAD remains a Demo asset; semantic_vad/ belongs to the model.
 
-Demo and examples use the installed SDK's discovery: a root models.json (or legacy manifest.json) takes precedence, otherwise exactly one immediate child package is required. Explicit `--models` / `A8_MODELS` points to that package root. No selection is guessed from the working directory or a deeper folder. To keep both 80ms and 160ms, download into separate roots such as models/80ms/ and models/160ms/, and explicitly select one with `--models models/80ms`. Do not overlay the two repositories into the same destination.
+The common download can replace this data directory's README with the HF model card. Installation instructions remain in the GitHub root README. See [models.json contract](../sdk/MODEL_PACKAGE.md) for fields and examples. Old SDK releases remain paired with their old resource revisions; the former prototype version1 models.json is superseded by version2. The candidate implementation changed resource loading only, not numerical model data or inference arithmetic.
 
-For a selected download, `sha256sum --ignore-missing -c SHA256SUMS` checks present files only; it does not detect absent required files. Web preflight uses SDK resource resolution and hashes every required file before replacing a loaded engine. Native loading additionally validates required files, target metadata and the exact raw embedding size. Checksums are not authenticated signatures.
-
-The [candidate package contract](../sdk/MODEL_PACKAGE.md) records the provisional fields. Model bytes and inference arithmetic are unchanged. Legacy format-1/2 manifests remain supported by the candidate SDK; old SDK versions cannot load models.json directly. Runtime qualification is limited to the board/variants in the integration report, not every resource directory.
+Verified resource revisions for SDK0.7.2.dev2:160ms `a3f645da5a4ab0583b4b1376ff76c6f56b91426f`;80ms `a06231291d4264bee67cb7eabb0bdde663eb8032`. Both are commits on main; no tags are needed.

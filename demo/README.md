@@ -191,6 +191,6 @@ Model/runtime setup remains separate; see [Python installation](../sdk/PYTHON_PA
 
 Silero VAD v5 is bundled at `demo/assets/silero_vad.onnx` with its MIT license. It is independent of the HF model package. The semantic end-of-turn VAD remains part of the Infinite model.
 
-## Root models.json integration candidate
+## Root models.json configuration
 
-Candidate 0.7.2.dev1 (native 0.7.2-dev) adds the flat HF package entry point. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](../sdk/MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.
+SDK 0.7.2.dev2 (native 0.7.2-dev2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../models/README.md) and [package contract](../sdk/MODEL_PACKAGE.md). Legacy manifests remain supported. Historical release qualification above does not automatically qualify this candidate.
