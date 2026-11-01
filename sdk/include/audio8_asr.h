@@ -24,12 +24,13 @@
 #define AUDIO8_ASR_H
 
 #include <stdint.h>
+#include "pandora_runtime.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define A8_VERSION "0.7.2"
+#define A8_VERSION "0.8.0"
 
 #if defined(__GNUC__)
 #define A8_API __attribute__((visibility("default")))
@@ -95,10 +96,20 @@ A8_API const char *a8_version(void);
 A8_API void a8_default_options(a8_options *opt);
 
 /* Load the model from model_dir (layout: docs/MODEL_SETUP.md). NULL on failure, see a8_create_error().
-   While loading (and in a8_destroy) the process's stdout is sent to stderr: the vendor runtime prints notices there
-   (A8_KEEP_STDOUT=1 to keep them on stdout). */
+   The SDK does not redirect stdout/stderr or change global AidLite logging. Vendor notices may appear.
+   Handles belong to the creating PID; inherited calls return A8_ERR_STATE before vendor access. */
 A8_API a8_engine *a8_create(const char *model_dir, const a8_options *opt);
+/* Native writes the owner slot before returning; remains visible across a Python
+ * return-handoff interruption. NULL runtime selects a new default runtime. The
+ * model retains its runtime after the caller releases the Runtime handle.
+ * Negative A8_ERR_* codes use a8_create_error(); no model output on failure. */
+A8_API int a8_create_with_runtime(const char *, const a8_options *, pandora_runtime_t *, a8_engine **out);
+/* Idempotent empty-slot destruction. Caller must finish calls before destroying.
+   Fork misuse returns A8_ERR_STATE and preserves the slot. */
+A8_API int a8_destroy_owned(a8_engine **out);
 A8_API const char *a8_create_error(void);   /* last a8_create failure (thread-local) */
+/* Legacy void destroy refuses inherited handles without freeing them; see a8_create_error().
+   Prefer a8_destroy_owned for a checked status. Never initialize the inherited AidLite provider after fork; use exec. */
 A8_API void a8_destroy(a8_engine *e);
 
 A8_API int a8_get_info(a8_engine *e, a8_info *info);
@@ -144,7 +155,8 @@ A8_API int a8_read_tokens(a8_engine *e, a8_token *out, int cap);
    incrementally across tokens. Returns the byte count (may exceed cap: then only cap bytes are written), or < 0. */
 A8_API int a8_token_bytes(a8_engine *e, int32_t id, char *buf, int cap);
 
-/* Soft reset (mechanism; the caller decides when): LM context back to the prefix (fresh positions), then the cached
+/* replay_from_s must be finite (negative finite times may replay the available cache).
+   Soft reset (mechanism; the caller decides when): LM context back to the prefix (fresh positions), then the cached
    audio rows with audio_t > replay_from_s (at most replay_max_s before the next clock) are replayed so the model
    re-hears them. The audio tower and the audio stream are untouched; feeding continues normally afterwards.
    Valid once the first token is out (A8_ERR_STATE before). Returns the number of new tokens queued by the replay,

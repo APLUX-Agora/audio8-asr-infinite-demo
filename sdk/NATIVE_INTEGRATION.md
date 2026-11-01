@@ -103,6 +103,8 @@ requires closing and recreating the Python model; do not assume that a new reque
 | `a8_version()` | Returns a library-owned NUL-terminated version string. |
 | `a8_default_options(opt)` | Fills the caller's non-NULL options pointer; returns void. |
 | `a8_create(model_dir,opt)` | Package-root UTF-8/filesystem path and initialized options pointer. Returns engine handle or NULL; creation is synchronous. |
+| `a8_create_with_runtime(model_dir,opt,runtime,out)` | Checked model creation using this provider's Runtime, or NULL for default. Writes a persistent empty owner slot; returns0 or A8_ERR_*. Model retains Runtime state. |
+| `a8_destroy_owned(out)` | Clears and destroys the caller's owner slot; repeated empty cleanup succeeds. Rejects inherited PID with A8_ERR_STATE and leaves its slot unchanged. Wait for in-flight calls first. |
 | `a8_create_error()` | Library-owned description of the last creation failure on this thread. |
 | `a8_destroy(engine)` | Releases the handle/resources; returns void. After destruction the handle is invalid; do not double-destroy or race an in-flight call. |
 | `a8_get_info(engine,out)` | Fills caller-owned `a8_info`, returns 0 on success. |
@@ -117,16 +119,17 @@ requires closing and recreating the Python model; do not assume that a new reque
 | `a8_get_stats(engine,out)` | Fills caller-owned a8_stats, returns 0. |
 | `a8_set_hotwords(engine,tokenizer_path,words_json,top_k,start_boost,continuation_boost)` | After reset, before audio: matching tokenizer file, or NULL/empty to resolve models.json resources.tokenizer (legacy extras.tokenizer); JSON array of UTF-8 strings (`[]` disables); top_k 0 or1..vocabulary; finite boosts [0,100]. Returns 0. Limits:256 terms,1024 UTF-8 bytes/term,128 tokens/variant,65536 JSON bytes. Configuration survives reset; matching history clears. The bias is a preference, not a spelling guarantee. |
 
-The configured NULL/empty tokenizer-path default is available in native 0.7.2; older deliveries require an explicit tokenizer path.
+The configured NULL/empty tokenizer-path default is available in native 0.8.0; older deliveries require an explicit tokenizer path.
 
 For optional hotwords the example accepts repeated `--hotword TERM` and `--tokenizer FILE`; it defaults to the
 current package's configured tokenizer path. An explicit path overrides that selection; missing declarations never fall back to a conventional filename. `--realtime` paces 100ms input blocks; omit it for unpaced file processing.
-Normal stdout is transcript UTF-8 bytes plus a newline. Diagnostics go to stderr. Exit status is 0 on success,
+The example prints transcript UTF-8 bytes plus a newline to stdout and application diagnostics to stderr.
+Vendor notices may also appear on either stream; use the C token API for programmatic results. Exit status is 0 on success,
 1 on an input/SDK error, or 128+signal (130 for SIGINT,143 for SIGTERM) after cooperative cleanup.
 
 ## Compatibility
 
-The delivered native SDK and Python package are **0.7.2**, using models.json version 2. Both 80ms and 160ms are qualified on QCS8550 / Ubuntu 22.04 / AidLite 2.5.0.284 / QNN 2.48 with CPython 3.10, 3.11 and 3.12. Other SoC NPU execution and Ubuntu releases remain untested. AidLite/QNN and the board BSP are external requirements. See [model setup](../docs/MODEL_SETUP.md).
+The delivered native SDK and Python package are **0.8.0**, using models.json version 2. Both 80ms and 160ms were exercised for this delivery on QCS8550 / Ubuntu 22.04 / AidLite 2.5.0.284 / QNN 2.48 with CPython 3.10, 3.11 and 3.12. Other SoC NPU execution and Ubuntu releases remain untested. AidLite/QNN and the board BSP are external requirements. See [model setup](../docs/MODEL_SETUP.md).
 
 ## SDK 0.7.0 request controls
 
@@ -142,4 +145,14 @@ After a live `a8_feed` exhausts the cap, state is terminal `2`; do not call nati
 
 ## Root models.json configuration
 
-SDK 0.7.2 (native 0.7.2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Both clocks are qualified on QCS8550 / Ubuntu 22.04 with CPython 3.10, 3.11 and 3.12. Other profiles remain untested.
+SDK 0.8.0 (native 0.8.0) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Both clocks were exercised for this delivery on QCS8550 / Ubuntu 22.04 with CPython 3.10, 3.11 and 3.12. Other profiles remain untested.
+
+## Host process integration (0.8.0)
+
+The SDK leaves host signal masks/handlers, stdout/stderr, global AidLite logging,
+core/memlock limits and dumpable state unchanged. Vendor notices may appear.
+Calls are synchronous; signal delivery to Python may wait for native return.
+Use explicit close/destroy after in-flight work finishes. Persistent native owner
+slots permit cleanup after an interrupted return handoff. Model/Runtime handles
+are process-local; use spawn/exec, and initialize there instead of inheriting an
+initialized AidLite provider. See [Runtime host contract](RUNTIME.md#host-integration).

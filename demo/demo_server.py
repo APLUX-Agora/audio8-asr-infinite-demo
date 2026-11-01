@@ -737,7 +737,14 @@ def main():
     try:
         for sig in (signal.SIGTERM, signal.SIGINT):
             previous[sig] = signal.signal(sig, interrupt)
-        S = Session()
+        # Application-owned startup policy: avoid interrupting vendor RPC setup.
+        # Background inference threads inherit these blocked shutdown signals;
+        # the main thread restores its original mask and owns shutdown handling.
+        startup_mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM, signal.SIGINT})
+        try:
+            S = Session()
+        finally:
+            signal.pthread_sigmask(signal.SIG_SETMASK, startup_mask)
         if stop_requested:
             raise KeyboardInterrupt
         print(f"[demo] engine ready in {S.init_s:.1f}s, {S.clock} ms clock, lang {S.lang}; http://0.0.0.0:{a.port}/", flush=True)

@@ -188,3 +188,12 @@ Silero VAD v5 is bundled at `demo/assets/silero_vad.onnx` with its MIT license. 
 ## Root models.json configuration
 
 SDK 0.7.2 (native 0.7.2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](../sdk/MODEL_PACKAGE.md). Legacy manifests remain supported. Both 80ms and 160ms are qualified on QCS8550 / Ubuntu 22.04 / AidLite 2.5.0.284 / QNN 2.48 with CPython 3.10, 3.11 and 3.12. Other SoC NPU execution and Ubuntu releases remain untested.
+
+## Startup signals
+
+The Demo application temporarily blocks SIGINT/SIGTERM while constructing its
+Session so shutdown cannot interrupt AidLite/QNN RPC initialization. Its inference
+workers inherit this application mask; the main thread restores its original mask
+and owns signal handling and cleanup. A pending stop is processed after the model
+owner is assigned. This policy belongs to the executable application; the installed
+Python/C SDK does not alter a developer application's masks or handlers.

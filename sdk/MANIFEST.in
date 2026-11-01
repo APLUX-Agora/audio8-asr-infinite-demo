@@ -2,3 +2,5 @@ include pyproject.toml setup.py native-library.json PYTHON_PACKAGE.md
 recursive-include python *.py LICENSE
 include lib/libaudio8_asr.so lib/LICENSE lib/LICENSE.zh-CN.txt lib/THIRD_PARTY_NOTICES.txt
 recursive-include lib/LICENSES *
+
+include include/audio8_asr.h include/pandora_runtime.h RUNTIME.md PYTHON_API.md NATIVE_INTEGRATION.md

@@ -10,7 +10,7 @@ Streaming speech recognition on Qualcomm devices, powered by Edge0's [Audio8-ASR
 
 Source: Lorna Mitchell, FOSDEM 2025, **CC BY 2.0 BE**. Original credits are retained; the excerpt is trimmed and transcoded. [Source, license and changes](docs/MEDIA_ATTRIBUTION.md).
 
-SDK version 0.7.2 supports the configurable models.json version 2 package.
+SDK version 0.8.0 supports the configurable models.json version 2 package.
 
 ## 1. Install
 
@@ -76,3 +76,11 @@ See [LICENSING.md](LICENSING.md) for component scopes, [LICENSE](LICENSE) for th
 and [NOTICE](NOTICE) for attribution. Demo/example code and public interfaces use Apache-2.0;
 the precompiled SDK and model adaptations are subject to the
 [Pandora Model and SDK License](LICENSES/Pandora-Model-SDK.en.txt) and applicable upstream terms.
+
+## Hardware runtime configuration
+
+Python and C callers configure hardware through Pandora Runtime/QnnOptions,
+separately from model generation settings. AidLite remains the inference backend.
+See [Runtime options, support status and ownership](sdk/RUNTIME.md): supported
+profiles/control latency are forwarded; priority/polling and system_settings are
+reserved and explicitly reported as inactive in this provider.

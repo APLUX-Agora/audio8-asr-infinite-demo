@@ -2,11 +2,10 @@
 from __future__ import annotations
 import codecs
 from functools import wraps
-from contextlib import contextmanager
 import json
 from pathlib import Path
-import signal
 import threading
+from .runtime import Runtime,QnnOptions,RuntimeNativeError
 
 import numpy as np
 from ._native import (_Native, A8Error, resolve_model_dir, installed_clocks,
@@ -16,15 +15,6 @@ from .types import (ASRCapabilities, ASRError, ASRLoadError, ASRInferenceError,
                        ASRStateError, ASRUnsupportedError, HotwordConfig,
                        TranscriptionResult, TranscriptionUpdate,
                        generation_limit, hotword_config)
-
-
-@contextmanager
-def _native_signals():
-    previous = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM, signal.SIGINT})
-    try:
-        yield
-    finally:
-        signal.pthread_sigmask(signal.SIG_SETMASK, previous)
 
 
 def _failure(error, category=ASRInferenceError):
@@ -44,18 +34,23 @@ class ASRModel:
 
     @classmethod
     def from_pretrained(cls, model_dir=None, *, library=None, clock_ms=None, roll_s=28.8,
-                        stable_rows=-1, semantic_vad=True, replay_max_s=10.0):
+                        stable_rows=-1, semantic_vad=True, replay_max_s=10.0, runtime=None):
         model = cls.__new__(cls)
         model._native = None
         model._request = threading.Lock()
         model._failed = False
         model._stats = {}
+        model._runtime=None
+        model._owns_runtime=runtime is None
         try:
+            if runtime is not None and not isinstance(runtime,Runtime):raise TypeError("runtime must be an audio8_asr.Runtime")
+            model._runtime=runtime if runtime is not None else Runtime()
+            model._runtime._check()
             model.model_dir = resolve_model_dir(model_dir)
             if clock_ms is not None and (isinstance(clock_ms, bool) or clock_ms not in (80, 160)):
                 raise ValueError('clock_ms must be 80, 160 or None')
-            if isinstance(stable_rows, bool) or not isinstance(stable_rows, int) or stable_rows < -1:
-                raise ValueError('stable_rows must be -1 or a nonnegative integer')
+            if isinstance(stable_rows, bool) or not isinstance(stable_rows, int) or not -1 <= stable_rows <= 2147483647:
+                raise ValueError('stable_rows must be -1 or a nonnegative int32')
             if not isinstance(semantic_vad, bool):
                 raise TypeError('semantic_vad must be a bool')
             for name, value in [('roll_s', roll_s), ('replay_max_s', replay_max_s)]:
@@ -64,9 +59,8 @@ class ASRModel:
             # Assign the owner before entering native create, including its return handoff.
             model._native = _Native.__new__(_Native)
             model._native._h = None
-            with _native_signals():
-                model._native.__init__(model.model_dir, clock_ms, 'zh', roll_s, stable_rows,
-                                       semantic_vad, replay_max_s, library=library)
+            model._native.__init__(model.model_dir, clock_ms, 'zh', roll_s, stable_rows,
+                                   semantic_vad, replay_max_s, library=library, runtime=model._runtime)
             native = model._native
             model._info = dict(native.info)
             model._stats = native.stats()
@@ -79,8 +73,8 @@ class ASRModel:
             return model
         except BaseException as error:
             if model._native is not None:
-                with _native_signals():
-                    model._native.close()
+                model._native.close()
+            if model._owns_runtime and model._runtime is not None:model._runtime.close()
             if isinstance(error, (KeyboardInterrupt, SystemExit)):
                 raise
             raise _failure(error, ASRLoadError) from error
@@ -99,6 +93,7 @@ class ASRModel:
         return dict(self._stats)
 
     def _claim(self):
+        self._runtime._check_process()
         if not self._request.acquire(blocking=False):
             raise ASRStateError('Model is busy; close its recording before another request')
         if self._native is None or self._failed:
@@ -123,10 +118,9 @@ class ASRModel:
                                 max_boost=100, vocabulary=self._vocabulary)
         stream = ASRStream(self, source_rate, channels, channel, language)
         try:
-            with _native_signals():
-                self._native.begin_request(int(language == 'en'), limit)
-                self._native.set_hotwords(config.words, top_k=config.top_k,
-                    start_boost=config.start_boost, continuation_boost=config.continuation_boost)
+            self._native.begin_request(int(language == 'en'), limit)
+            self._native.set_hotwords(config.words, top_k=config.top_k,
+                start_boost=config.start_boost, continuation_boost=config.continuation_boost)
         except BaseException as error:
             self._failed = True
             if isinstance(error, A8Error):
@@ -170,12 +164,14 @@ class ASRModel:
                 stream.close()
 
     def close(self):
+        self._runtime._check_process()
         if not self._request.acquire(blocking=False):
             raise ASRStateError('Close the active recording and wait for native calls before closing')
         try:
             if self._native is not None:
-                with _native_signals():self._native.close()
+                self._native.close()
                 self._native = None
+            if self._owns_runtime:self._runtime.close()
         finally:
             self._request.release()
 
@@ -189,6 +185,7 @@ class ASRModel:
 def _owned_call(function):
     @wraps(function)
     def call(self, *args, **kwargs):
+        self._model._runtime._check_process()
         if not self._operation.acquire(blocking=False):
             raise ASRStateError('Recording has an active operation; wait before calling again')
         try:
@@ -239,7 +236,7 @@ class ASRStream:
 
     def _execute(self, function, *args):
         try:
-            with _native_signals():return function(*args)
+            return function(*args)
         except BaseException as error:
             self._model._failed = True
             if isinstance(error, A8Error):raise _failure(error) from error
@@ -322,6 +319,8 @@ class ASRStream:
         """Advanced replay; caller owns the text-revision/endpoint policy."""
         self._open()
         if self._result is not None:raise ASRStateError('Recording is finished')
+        if isinstance(replay_from_s, bool) or not isinstance(replay_from_s, (int, float)) or not np.isfinite(replay_from_s):
+            raise ValueError('replay_from_s must be a finite number')
         tokens = self._execute(self._model._native.soft_reset, replay_from_s)
         # Replay starts a new native language sequence, not a continuation byte.
         self._decoder = codecs.getincrementaldecoder('utf-8')('strict')

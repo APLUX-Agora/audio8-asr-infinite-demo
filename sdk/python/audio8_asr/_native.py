@@ -55,6 +55,8 @@ def _load(library=None):
         if not selected.is_file():
             raise OSError("Missing packaged libaudio8_asr.so; install the complete matching SDK with pip")
     lib = ctypes.CDLL(str(selected))
+    if not hasattr(lib,"pandora_runtime_get_submission_status") or not hasattr(lib,"a8_destroy_owned"):
+        raise RuntimeError("This binding requires the matching Audio8 SDK0.8.0 or newer")
     P, I, D, F = ctypes.c_void_p, ctypes.c_int, ctypes.c_double, ctypes.POINTER(ctypes.c_float)
     sig = {"a8_version": (ctypes.c_char_p, []), "a8_default_options": (None, [ctypes.POINTER(_Options)]),
            "a8_create": (P, [ctypes.c_char_p, ctypes.POINTER(_Options)]), "a8_create_error": (ctypes.c_char_p, []),
@@ -67,6 +69,8 @@ def _load(library=None):
         "a8_request_state": (I, [P]),
         "a8_finish_audio": (I, [P, F, I, I]),
     })
+    sig.update({"a8_create_with_runtime":(I,[ctypes.c_char_p,ctypes.POINTER(_Options),P,ctypes.POINTER(P)]),
+                "a8_destroy_owned":(I,[ctypes.POINTER(P)])})
     for name, (res, args) in sig.items():
         f = getattr(lib, name)
         f.restype, f.argtypes = res, args
@@ -152,9 +156,10 @@ def model_files(model_dir, clock_ms):
 class _Native:
     """One native owner with a fixed audio clock; request controls select language prefixes. Use from one thread."""
 
-    def __init__(self, model_dir=None, clock_ms=None, lang="zh", roll_s=28.8, stable_rows=-1, semantic_vad=True, replay_max_s=10.0, library=None):
+    def __init__(self, model_dir=None, clock_ms=None, lang="zh", roll_s=28.8, stable_rows=-1, semantic_vad=True, replay_max_s=10.0, library=None, runtime=None):
         """clock_ms None = the first installed audio clock (installed_clocks)."""
-        self._h = None
+        self._slot=ctypes.c_void_p()
+        self._runtime=runtime
         self._lib = _load(library)
         self.model_dir = model_dir = resolve_model_dir(model_dir)
         if clock_ms is None:
@@ -167,9 +172,9 @@ class _Native:
         L.a8_default_options(ctypes.byref(o))
         o.clock_ms, o.lang, o.roll_s, o.stable_rows = int(clock_ms), LANG_EN if lang == "en" else LANG_ZH, float(roll_s), int(stable_rows)
         o.semantic_vad, o.replay_max_s = int(bool(semantic_vad)), float(replay_max_s)
-        self._h = L.a8_create(os.fsencode(model_dir), ctypes.byref(o))
-        if not self._h:
-            raise A8Error(None, L.a8_create_error().decode())
+        handle=runtime._bind(L)
+        rc=L.a8_create_with_runtime(os.fsencode(model_dir),ctypes.byref(o),handle,ctypes.byref(self._slot))
+        if rc<0:raise A8Error(rc,L.a8_create_error().decode())
         i = _Info()
         self._check(L.a8_get_info(self._h, ctypes.byref(i)))
         self.info = {"sampling_rate": i.sampling_rate, "samples_per_token": i.samples_per_token, "clock_ms": i.clock_ms,
@@ -276,10 +281,16 @@ class _Native:
         self._check(self._lib.a8_get_stats(self._h, ctypes.byref(s)))
         return {k: getattr(s, k) for k, _ in s._fields_}
 
+    @property
+    def _h(self):return self._slot.value
+    @_h.setter
+    def _h(self,value):
+        if not hasattr(self,'_slot'):self._slot=ctypes.c_void_p()
+        self._slot.value=value
     def close(self):
-        if self._h:
-            self._lib.a8_destroy(self._h)
-            self._h = None
+        if getattr(self,'_slot',None) is not None and self._slot.value:
+            self._runtime._check_process()
+            self._check(self._lib.a8_destroy_owned(ctypes.byref(self._slot)))
 
     def __del__(self):
         try:

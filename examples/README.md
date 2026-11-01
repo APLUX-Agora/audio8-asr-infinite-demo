@@ -9,7 +9,9 @@ The Python programs use this Demo's `.venv` and its pip-installed SDK; they do n
 .venv/bin/python examples/python/transcribe_file.py examples/audio/jobs_keynote_10min_16k.flac --lang en
 ```
 
-Outputs text to stdout and processing diagnostics to stderr. This is the bare engine. For long audio with music,
+Outputs text to stdout and application diagnostics to stderr. AidLite/RPC may also emit
+vendor notices to stdout/stderr; stdout is not a machine-only transcript protocol.
+For programmatic integration use the SDK's returned text. This is the bare engine. For long audio with music,
 applause or pauses, the streaming example adds the Web Demo's silence gate and soft-reset policy.
 The gate loads the bundled `demo/assets/silero_vad.onnx`; it does not require a VAD file in the HF package:
 
@@ -73,3 +75,20 @@ SDK/runtime pair. Example output/performance is input/platform dependent; no fix
 ## Root models.json configuration
 
 SDK 0.7.2 (native 0.7.2) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](../sdk/MODEL_PACKAGE.md). Legacy manifests remain supported. Both 80ms and 160ms are qualified on QCS8550 / Ubuntu 22.04 / AidLite 2.5.0.284 / QNN 2.48 with CPython 3.10, 3.11 and 3.12. Other SoC NPU execution and Ubuntu releases remain untested.
+
+## AidLite Runtime configuration (SDK0.8.0)
+
+The [C Runtime client](c/runtime_example.c) demonstrates the unified configuration
+contract, model binding, support/submission queries and explicit cleanup. On the
+Linux AArch64 board, from the repository root:
+
+```bash
+cc -std=c11 -I sdk/include examples/c/runtime_example.c -L sdk/lib \
+  -Wl,-rpath,"$PWD/sdk/lib" -laudio8_asr -o /tmp/audio8-runtime-example
+/tmp/audio8-runtime-example /path/to/Audio8-ASR-Infinite-80ms 80
+/tmp/audio8-runtime-example /path/to/Audio8-ASR-Infinite-160ms 160
+```
+
+Both variants use the same SDK. See [Runtime options](../sdk/RUNTIME.md) for Python
+usage, accepted values and defaults, and reserved options that are not forwarded
+to AidLite in this version.
