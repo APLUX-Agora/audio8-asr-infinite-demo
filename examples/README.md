@@ -92,3 +92,13 @@ cc -std=c11 -I sdk/include examples/c/runtime_example.c -L sdk/lib \
 Both variants use the same SDK. See [Runtime options](../sdk/RUNTIME.md) for Python
 usage, accepted values and defaults, and reserved options that are not forwarded
 to AidLite in this version.
+
+## CPU placement
+
+SDK CPU affinity defaults to `inherit`; official Demo/file launchers explicitly use
+`default`. Python `Runtime(cpu=CpuOptions(affinity=...))` and the C Runtime accept
+inherit/default/explicit CPU IDs for both 80ms and 160ms. See the
+[Python/C CPU options reference](../sdk/CPU_AFFINITY.md) for values, platform profiles,
+CLI commands, ownership and actual-thread status queries.
+
+The C++ file example also accepts `--cpu-affinity inherit`, `default` or a comma-separated CPU list. The C Runtime client takes an optional final CPU ID; without it the example chooses the default profile.

@@ -7,7 +7,7 @@ python -m pip install ./sdk
 ```
 
 Then `from audio8_asr import ASRModel` works in your own application without `sys.path` changes.
-This delivery includes native SDK 0.8.0; Python distribution version is `0.8.0`.
+This delivery includes native SDK 0.9.0; Python distribution version is `0.9.0`.
 Use Python, native library and models from compatible deliveries. No model is downloaded by `from_pretrained`.
 
 ## Quick start
@@ -61,7 +61,7 @@ ASRModel.from_pretrained(model_dir=None, *, library=None, clock_ms=None,
                         replay_max_s=10.0, runtime=None)
 ```
 
-Request-language, budget and final-audio controls were introduced in native SDK 0.7.0. The current models.json version 2 delivery requires the matched native **0.8.0** / Python **0.8.0** pair. `clock_ms=None` selects an installed clock (160 first, then 80). Explicit clock must exist. Other options preserve native rolling, stable-row, semantic EOT and replay controls; they are not cross-model features. `stable_rows=-1` uses native defaults; `roll_s=0` disables rolling and therefore retains native context-capacity limits. `sdk_version`, `info` (copy) and `stats()` (last owned-call snapshot) expose advanced diagnostics.
+Request-language, budget and final-audio controls were introduced in native SDK 0.7.0. The current models.json version 2 delivery requires the matched native **0.9.0** / Python **0.9.0** pair. `clock_ms=None` selects an installed clock (160 first, then 80). Explicit clock must exist. Other options preserve native rolling, stable-row, semantic EOT and replay controls; they are not cross-model features. `stable_rows=-1` uses native defaults; `roll_s=0` disables rolling and therefore retains native context-capacity limits. `sdk_version`, `info` (copy) and `stats()` (last owned-call snapshot) expose advanced diagnostics.
 
 - `language=None` defaults to Chinese; `"zh"`/`"en"` select native prefix state per request. `"auto"` is unsupported. Result language reports the selected language, not detected speech.
 - Free-text `prompt` is unsupported, including empty string.
@@ -91,13 +91,13 @@ Advanced integrations can inspect `stream.last_tokens` (copied token ID/is_text/
 
 ## Root models.json configuration
 
-SDK 0.8.0 (native 0.8.0) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Both audio clocks were tested on QCS8550 / Ubuntu22.04 with CPython3.10,3.11 and3.12.
+SDK 0.9.0 (native 0.9.0) resolves common resources and target graphs from models.json version 2. Pass the root containing models.json; see the [model setup](../docs/MODEL_SETUP.md) and [package contract](MODEL_PACKAGE.md). Legacy manifests remain supported. Both audio clocks were tested on QCS8550 / Ubuntu22.04 with CPython3.10,3.11 and3.12.
 
 ### Package resource inspection
 
 `model_files(model_dir, clock_ms)` returns a fresh dictionary of runtime role names to package-root-relative file paths. It performs new-index schema/path/target completeness checks without loading a native library; it does not hash resources or identify board hardware. `installed_clocks(model_dir)` reports the selected package clock. Web preflight uses the same resource paths for SHA256SUMS checks.
 
-## Host process integration (0.8.0)
+## Host process integration (0.9.0)
 
 The SDK leaves host signal masks/handlers, stdout/stderr, global AidLite logging,
 core/memlock limits and dumpable state unchanged. Vendor notices may appear.
@@ -106,3 +106,11 @@ Use explicit close/destroy after in-flight work finishes. Persistent native owne
 slots permit cleanup after an interrupted return handoff. Model/Runtime handles
 are process-local; use spawn/exec, and initialize there instead of inheriting an
 initialized AidLite provider. See [Runtime host contract](RUNTIME.md#host-integration).
+
+## CPU placement
+
+SDK CPU affinity defaults to `inherit`; official Demo/file launchers explicitly use
+`default`. Python `Runtime(cpu=CpuOptions(affinity=...))` and the C Runtime accept
+inherit/default/explicit CPU IDs for both 80ms and 160ms. See the
+[Python/C CPU options reference](CPU_AFFINITY.md) for values, platform profiles,
+CLI commands, ownership and actual-thread status queries.

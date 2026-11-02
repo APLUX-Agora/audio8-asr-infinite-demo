@@ -11,7 +11,7 @@ Run these commands from the Demo checkout after [installation](../README.md#1-in
 | QCS8275 / IQ8 | 2.48 | `qcs8275_qnn248` |
 | QCS9075 / IQ9 | 2.48 | `qcs9075_qnn248` |
 
-Both variants provide these target resources. Native SDK and Python package **0.8.0** support this models.json version 2 layout. Both 80ms and 160ms are qualified on QCS8550 / Ubuntu 22.04 / AidLite 2.5.0.284 / QNN 2.48 with CPython 3.10, 3.11 and 3.12. Other SoC NPU execution and Ubuntu releases remain untested.
+Both variants provide these target resources. Native SDK and Python package **0.9.0** support this models.json version 2 layout. Both 80ms and 160ms are qualified on QCS8550 / Ubuntu 22.04 / AidLite 2.5.0.284 / QNN 2.48 with CPython 3.10, 3.11 and 3.12. Other SoC NPU execution and Ubuntu releases remain untested.
 
 Download common resources and exactly one target into each independent package root. The examples below select QCS8550; replace `TARGET` using the table for another board. Both downloads for a variant use its same immutable commit. Authentication is required only while the repository is private or access-controlled; public downloads do not require login.
 

@@ -7,7 +7,7 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[2]
-from audio8_asr import ASRModel, HotwordConfig, resolve_model_dir
+from audio8_asr import Runtime, CpuOptions, ASRModel, HotwordConfig, resolve_model_dir
 from audio8_asr.audio import prepare_audio
 from example_lifecycle import managed_engine, ExampleInterrupted
 
@@ -30,10 +30,16 @@ def main():
     ap.add_argument("--hotword-top-k", type=int, default=50)
     ap.add_argument("--hotword-start-boost", type=float, default=6.0)
     ap.add_argument("--hotword-continuation-boost", type=float, default=8.0)
+    ap.add_argument("--cpu-affinity", default="default", help="default, inherit, or comma-separated CPU IDs")
     a = ap.parse_args()
+    try:
+        affinity=a.cpu_affinity if a.cpu_affinity in ("inherit","default") else [int(x) for x in a.cpu_affinity.split(",")]
+        runtime=Runtime(cpu=CpuOptions(affinity=affinity))
+    except (TypeError, ValueError) as error:
+        ap.error(str(error))
     hints = HotwordConfig(tuple(a.hotword), a.hotword_top_k,
                           a.hotword_start_boost, a.hotword_continuation_boost)
-    with managed_engine(ASRModel.from_pretrained, resolve_model_dir(a.models, models_root=ROOT / "models"), clock_ms=a.clock_ms) as (model, check):
+    with runtime, managed_engine(ASRModel.from_pretrained, resolve_model_dir(a.models, models_root=ROOT / "models"), clock_ms=a.clock_ms, runtime=runtime) as (model, check):
         check()
         start = time.monotonic()
         result = model.transcribe(a.audio, language=a.lang, hotwords=hints,

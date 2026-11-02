@@ -40,7 +40,7 @@ ROOT = os.path.dirname(HERE)
 
 import numpy as np  # noqa: E402
 
-from audio8_asr import ASRModel, HotwordConfig, A8Error, extra_file, resolve_model_dir  # noqa: E402
+from audio8_asr import Runtime, CpuOptions, ASRModel, HotwordConfig, A8Error, extra_file, resolve_model_dir  # noqa: E402
 from model_package_check import PackageVerifier
 from reset_policy import ResetPolicy  # noqa: E402
 from vad_gate import SileroGate  # noqa: E402
@@ -95,7 +95,9 @@ def duration_s(path):
 
 
 class Session:
-    def __init__(self):
+    def __init__(self, cpu):
+        self.cpu=cpu
+        self.runtime=None
         self.lock = threading.Lock()
         self.closing = threading.Event()
         self.close_lock = threading.Lock()
@@ -152,14 +154,14 @@ class Session:
 
     def load_engine(self):
         t = time.time()
-        self.model = ASRModel.from_pretrained(MODELS, clock_ms=int(self.clock))
+        self.runtime=Runtime(cpu=self.cpu)
         try:
+            self.model = ASRModel.from_pretrained(MODELS, clock_ms=int(self.clock), runtime=self.runtime)
             if self.closing.is_set():
                 raise RuntimeError("server is closing")
             self.asr = self.model.create_stream(sample_rate=16000, language=self.lang)
         except BaseException:
-            self.model.close()
-            self.model = None
+            self.close_engine()
             raise
         self.policy = ResetPolicy(self.asr)
         self.init_s = time.time() - t
@@ -176,6 +178,9 @@ class Session:
         if self.model is not None:
             self.model.close()
             self.model = None
+        if self.runtime is not None:
+            self.runtime.close()
+            self.runtime = None
 
     # ------------------------------------------------------------ events
     def broadcast(self, ev):
@@ -710,7 +715,13 @@ def main():
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--models", default=os.environ.get("A8_MODELS"),
                     help="package root containing models.json or legacy manifest.json; default: discover this demo models directory")
+    ap.add_argument("--cpu-affinity", default="default", help="default, inherit, or comma-separated CPU IDs")
     a = ap.parse_args()
+    try:
+        affinity=a.cpu_affinity if a.cpu_affinity in ("inherit","default") else [int(x) for x in a.cpu_affinity.split(",")]
+        cpu=CpuOptions(affinity=affinity)
+    except (TypeError, ValueError) as error:
+        ap.error(str(error))
     try:
         MODELS = resolve_model_dir(a.models, models_root=f"{ROOT}/models")
     except A8Error as error:
@@ -742,7 +753,7 @@ def main():
         # the main thread restores its original mask and owns shutdown handling.
         startup_mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM, signal.SIGINT})
         try:
-            S = Session()
+            S = Session(cpu)
         finally:
             signal.pthread_sigmask(signal.SIG_SETMASK, startup_mask)
         if stop_requested:

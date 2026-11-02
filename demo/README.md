@@ -197,3 +197,11 @@ workers inherit this application mask; the main thread restores its original mas
 and owns signal handling and cleanup. A pending stop is processed after the model
 owner is assigned. This policy belongs to the executable application; the installed
 Python/C SDK does not alter a developer application's masks or handlers.
+
+## CPU placement
+
+SDK CPU affinity defaults to `inherit`; official Demo/file launchers explicitly use
+`default`. Python `Runtime(cpu=CpuOptions(affinity=...))` and the C Runtime accept
+inherit/default/explicit CPU IDs for both 80ms and 160ms. See the
+[Python/C CPU options reference](../sdk/CPU_AFFINITY.md) for values, platform profiles,
+CLI commands, ownership and actual-thread status queries.

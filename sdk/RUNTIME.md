@@ -1,9 +1,11 @@
 # Pandora Runtime — Audio8 AidLite/QNN provider
 
-SDK0.8.0 adds provider-local hardware configuration without changing the
+SDK0.9.0 extends provider-local hardware configuration without changing the
 approved 80ms/160ms graphs, quantization, models.json or separate package roots.
 **AidLite still loads/decrypts and invokes every QNN2.48 graph.** This provider does
 not use Cosy's direct-QNN loading or create a second inference engine.
+CPU placement uses a model-private worker; see [CPU affinity](CPU_AFFINITY.md)
+for all Python/C options, defaults, lifecycle and observed-thread queries.
 
 ## Python
 
@@ -18,7 +20,7 @@ with Runtime(options=QnnOptions(performance_mode="balanced", priority="high",
         result = model.transcribe("speech.wav", language="en")
 ```
 
-`Runtime(backend="qnn", options=None, memory_lock="off")` is immutable. Omitted
+`Runtime(backend="qnn", options=None, memory_lock="off", cpu=None)` is immutable. Omitted
 options use burst/normal with the AidLite Config control-latency default100us.
 Omitting `runtime=` creates a model-owned default Runtime, closed with the model.
 Caller-owned Runtime objects can be reused across model lifetimes; close all models
@@ -108,9 +110,10 @@ EXTREME_POWER_SAVER, SYSTEM_SETTINGS (each prefixed PANDORA_QNN_). Priorities:
 PANDORA_PRIORITY_LOW/NORMAL/NORMAL_HIGH/HIGH. Numeric values match the header and
 Python table. RPC bounds/units/reserved behavior are identical to Python.
 
-Config ABI2 requires struct_size=sizeof(config), abi_version=2 and zero reserved
-fields. Override bits distinguish omitted values from explicit0. Runtime queries
-require their own sizeof and abi_version=2; bad sizes/versions fail without writing
+New config ABI3 requires struct_size=sizeof(config), abi_version=3 and zero reserved
+fields. Legacy ABI2/48-byte configs are accepted without reading the new CPU tail,
+with CPU inherit. ABI3 is 80 bytes on Linux AArch64. Override bits distinguish omitted values from explicit0. Runtime queries
+require their own sizeof and abi_version=2 or 3; bad sizes/versions fail without writing
 a larger object. This first Audio8 Runtime does not promise Cosy's ABI1 prefix
 compatibility; old Audio8 a8_options/a8_create/a8_destroy ABI remains intact.
 
@@ -142,7 +145,11 @@ this SDK does not expose plaintext/address APIs, but does not establish dump
 exclusion, zeroization or debugger resistance for opaque vendor-owned copies.
 Memory locking remains unavailable in this provider.
 
-Python native calls are synchronous. A Python signal handler may run only after a
+Python native calls wait synchronously for the model-private native execution
+worker. Loading, model computation, token/KV operations and release run on that
+worker; Python input conversion, result decoding and user callbacks remain on their
+existing application threads. The worker introduces no device-level scheduling.
+ A Python signal handler may run only after a
 vendor call returns; no immediate driver cancellation is promised. Model/Runtime
 creation uses persistent output slots. A return-handoff interruption can clean the
 recorded native owner; destroy clears its slot so explicit close can be retried

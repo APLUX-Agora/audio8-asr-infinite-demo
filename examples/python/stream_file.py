@@ -27,7 +27,7 @@ import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "demo"))
-from audio8_asr import ASRModel, A8Error, resolve_model_dir  # noqa: E402
+from audio8_asr import Runtime, CpuOptions, ASRModel, A8Error, resolve_model_dir  # noqa: E402
 from reset_policy import ResetPolicy  # noqa: E402
 from transcribe_file import SR, load_audio  # noqa: E402
 from example_lifecycle import managed_engine, ExampleInterrupted  # noqa: E402
@@ -49,7 +49,13 @@ def main():
     ap.add_argument("--eot-threshold", type=float, default=0.6, help="end-of-turn probability that starts a new paragraph")
     ap.add_argument("--fast", action="store_true", help="feed as fast as possible instead of real time")
     ap.add_argument("--plain", action="store_true", help="no silence gate and no soft-reset policy (the bare engine)")
+    ap.add_argument("--cpu-affinity", default="default", help="default, inherit, or comma-separated CPU IDs")
     a = ap.parse_args()
+    try:
+        affinity=a.cpu_affinity if a.cpu_affinity in ("inherit","default") else [int(x) for x in a.cpu_affinity.split(",")]
+        runtime=Runtime(cpu=CpuOptions(affinity=affinity))
+    except (TypeError, ValueError) as error:
+        ap.error(str(error))
     try:
         a.models = resolve_model_dir(a.models, models_root=os.path.join(ROOT, "models"))
     except A8Error as error:
@@ -57,7 +63,7 @@ def main():
     print(f"[example] model package: {a.models}", file=sys.stderr)
 
     audio = load_audio(a.audio)
-    with managed_engine(ASRModel.from_pretrained, a.models, clock_ms=a.clock_ms) as (model, check_interrupted), model.create_stream(sample_rate=SR, language=a.lang) as eng:
+    with runtime, managed_engine(ASRModel.from_pretrained, a.models, clock_ms=a.clock_ms, runtime=runtime) as (model, check_interrupted), model.create_stream(sample_rate=SR, language=a.lang) as eng:
         gate, pol = None, None
         if not a.plain:
             from vad_gate import SileroGate                          # needs onnxruntime

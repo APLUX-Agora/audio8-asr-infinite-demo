@@ -12,6 +12,8 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <sstream>
+#include <limits>
 #include <thread>
 #include <vector>
 
@@ -110,7 +112,7 @@ void drain(a8_engine* e, int count) {
 
 int main(int argc, char** argv) {
     try {
-        std::string models, audio, lang = "en", tokenizer;
+        std::string models, audio, lang = "en", tokenizer, affinity = "default";
         std::vector<std::string> words;
         int clock = 160;
         bool realtime = false;
@@ -118,12 +120,12 @@ int main(int argc, char** argv) {
             const std::string option = argv[i];
             if (option == "--help") {
                 std::cout << "Usage: transcribe_file --models PACKAGE [--clock-ms 160|80] [--lang en|zh] "
-                             "[--realtime] [--hotword TERM] [--tokenizer FILE] AUDIO.wav\n";
+                             "[--cpu-affinity inherit|default|3,4] [--realtime] [--hotword TERM] [--tokenizer FILE] AUDIO.wav\n";
                 return 0;
             }
             if (option == "--realtime") { realtime = true; continue; }
             if (option == "--models" || option == "--clock-ms" || option == "--lang" ||
-                option == "--hotword" || option == "--tokenizer") {
+                option == "--hotword" || option == "--tokenizer" || option == "--cpu-affinity") {
                 if (++i == argc) throw std::runtime_error("missing value for " + option);
                 const std::string value = argv[i];
                 if (option == "--models") models = value;
@@ -132,6 +134,7 @@ int main(int argc, char** argv) {
                     clock = value == "160" ? 160 : 80;
                 } else if (option == "--lang") lang = value;
                 else if (option == "--hotword") words.push_back(value);
+                else if (option == "--cpu-affinity") affinity = value;
                 else tokenizer = value;
             } else if (!option.empty() && option[0] == '-') throw std::runtime_error("unknown option: " + option);
             else if (audio.empty()) audio = option;
@@ -146,8 +149,33 @@ int main(int argc, char** argv) {
         a8_default_options(&options);
         options.clock_ms = clock;
         options.lang = lang == "en" ? A8_LANG_EN : A8_LANG_ZH;
+        pandora_runtime_config_t config = PANDORA_RUNTIME_CONFIG_INIT;
+        std::vector<uint32_t> cpus;
+        if (affinity == "inherit") config.cpu.policy = PANDORA_CPU_AFFINITY_INHERIT;
+        else if (affinity == "default") config.cpu.policy = PANDORA_CPU_AFFINITY_DEFAULT;
+        else {
+            if (affinity.empty() || affinity.back() == ',') throw std::runtime_error("invalid CPU list");
+            std::istringstream values(affinity); std::string value;
+            while (std::getline(values, value, ',')) {
+                if (value.empty() || value.find_first_not_of("0123456789") != std::string::npos)
+                    throw std::runtime_error("CPU IDs must be nonnegative integers");
+                const auto id = std::stoull(value);
+                if (id > std::numeric_limits<uint32_t>::max()) throw std::runtime_error("CPU ID out of range");
+                cpus.push_back(static_cast<uint32_t>(id));
+                if (cpus.size() > 1024) throw std::runtime_error("too many CPU IDs");
+            }
+            config.cpu.policy = PANDORA_CPU_AFFINITY_EXPLICIT;
+            config.cpu.cpu_ids = cpus.data(); config.cpu.cpu_count = cpus.size();
+        }
+        pandora_runtime_t *raw_runtime = nullptr;
+        if (pandora_runtime_create(&config, &raw_runtime) < 0)
+            throw std::runtime_error(pandora_runtime_last_error());
+        auto release_runtime = [](pandora_runtime_t *runtime) { pandora_runtime_destroy(&runtime); };
+        std::unique_ptr<pandora_runtime_t, decltype(release_runtime)> runtime(raw_runtime, release_runtime);
         // Native creation must return before a pending signal can unwind ownership.
-        std::unique_ptr<a8_engine, decltype(&a8_destroy)> engine(a8_create(models.c_str(), &options), a8_destroy);
+        a8_engine *raw_engine = nullptr;
+        a8_create_with_runtime(models.c_str(), &options, runtime.get(), &raw_engine);
+        std::unique_ptr<a8_engine, decltype(&a8_destroy)> engine(raw_engine, a8_destroy);
         if (!engine) throw std::runtime_error(std::string("create failed: ") + a8_create_error());
         check_stop();
         checked(engine.get(), a8_reset(engine.get()));

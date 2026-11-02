@@ -5,7 +5,8 @@
  * The engine implements the model's own streaming protocol (DSM: one text token per audio clock): audio windowing,
  * mel, audio tower + projector (NPU), LM (NPU, native KV), KV / position management, the 30 s rolling context, greedy
  * decoding, the semantic-VAD (end-of-turn) heads and the soft-reset replay mechanism.
- * It reads model resources at load time and has no application worker or timer. The caller feeds PCM; each call runs
+ * It reads model resources at load time. A model-private execution worker owns loading, computation and release.
+ * There is no device scheduler or pacing timer. The caller feeds PCM; each call waits for
  * synchronously all the clocks the audio allows. Policies (silence gate, when to soft-reset, pacing, UI) belong to the
  * caller.
  *
@@ -30,7 +31,7 @@
 extern "C" {
 #endif
 
-#define A8_VERSION "0.8.0"
+#define A8_VERSION "0.9.0"
 
 #if defined(__GNUC__)
 #define A8_API __attribute__((visibility("default")))

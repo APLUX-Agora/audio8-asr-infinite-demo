@@ -5,7 +5,7 @@ from functools import wraps
 import json
 from pathlib import Path
 import threading
-from .runtime import Runtime,QnnOptions,RuntimeNativeError
+from .runtime import Runtime,QnnOptions,CpuOptions,RuntimeNativeError
 
 import numpy as np
 from ._native import (_Native, A8Error, resolve_model_dir, installed_clocks,

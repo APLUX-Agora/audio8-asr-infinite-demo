@@ -1,6 +1,6 @@
 #!/bin/bash
 # Start the board web demo on the SDK.
-#   demo/run.sh [--port 8765] [--models <package-root>]
+#   demo/run.sh [--port 8765] [--models <package-root>] [--cpu-affinity inherit|default|3,4]
 # Env: A8_CLOCK_MS (160 | 80, default: the installed one), A8_LANG (en | zh, default en), A8_MODELS (default
 #      <repo>/models), AUDIO8_ASR_LIB (optional explicit qualified library; default: installed SDK).
 set -e

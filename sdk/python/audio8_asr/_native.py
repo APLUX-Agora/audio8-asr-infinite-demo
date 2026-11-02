@@ -55,8 +55,8 @@ def _load(library=None):
         if not selected.is_file():
             raise OSError("Missing packaged libaudio8_asr.so; install the complete matching SDK with pip")
     lib = ctypes.CDLL(str(selected))
-    if not hasattr(lib,"pandora_runtime_get_submission_status") or not hasattr(lib,"a8_destroy_owned"):
-        raise RuntimeError("This binding requires the matching Audio8 SDK0.8.0 or newer")
+    if not hasattr(lib,"pandora_runtime_get_cpu_status") or not hasattr(lib,"a8_destroy_owned"):
+        raise RuntimeError("This binding requires the matching Audio8 SDK0.9.0 or newer")
     P, I, D, F = ctypes.c_void_p, ctypes.c_int, ctypes.c_double, ctypes.POINTER(ctypes.c_float)
     sig = {"a8_version": (ctypes.c_char_p, []), "a8_default_options": (None, [ctypes.POINTER(_Options)]),
            "a8_create": (P, [ctypes.c_char_p, ctypes.POINTER(_Options)]), "a8_create_error": (ctypes.c_char_p, []),

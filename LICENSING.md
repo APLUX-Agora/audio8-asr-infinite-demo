@@ -4,7 +4,7 @@ Version 1.0, effective 2026-10-15. Chinese and English agreement texts are bundl
 
 | Material / 材料 | Applicable license / 适用许可 |
 | --- | --- |
-| APLUX-authored `demo/` business code, `examples/`, `sdk/include/` headers and `sdk/python/` bindings and Python packaging code/metadata (`sdk/setup.py`, `sdk/pyproject.toml`), SDK verification utilities (`sdk/verify_release.py`, `sdk/lib/verify_release.py`); accompanying documentation / 阿加犀业务代码、示例、头文件、接口绑定及文档 | [Apache-2.0](LICENSES/Apache-2.0.txt) |
+| APLUX-authored `demo/` business code, `examples/`, `sdk/include/` headers and `sdk/python/` bindings and Python packaging code/metadata (`sdk/setup.py`, `sdk/pyproject.toml`); accompanying documentation / 阿加犀业务代码、示例、头文件、接口绑定及文档 | [Apache-2.0](LICENSES/Apache-2.0.txt) |
 | APLUX proprietary contributions in `sdk/lib/libaudio8_asr.so` / 库中的阿加犀专有部分 | [Pandora 中文](LICENSES/Pandora-Model-SDK.zh-CN.txt) / [English](LICENSES/Pandora-Model-SDK.en.txt) |
 | Third-party code, upstream models and weights, runtimes, data and sample media / 第三方代码、上游模型及权重、运行库、数据和示例素材 | Their own licenses and notices / 各自许可与声明，见 [NOTICE](NOTICE) 与 [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) |
 
