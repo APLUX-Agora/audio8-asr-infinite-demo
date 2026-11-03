@@ -7,7 +7,7 @@ spec=importlib.util.spec_from_file_location('preflight',ROOT/'tools/check-enviro
 preflight=importlib.util.module_from_spec(spec);spec.loader.exec_module(preflight)
 class EnvironmentTests(unittest.TestCase):
  def test_check_reads_sourced_parameters(self):
-  with tempfile.TemporaryDirectory() as folder,patch.dict(os.environ,{'AGORA_WORKSPACE':folder,'AGORA_SOC':'QCS8550','AGORA_OS':'ubuntu','AGORA_OS_VERSION':'22.04'}),patch('sys.argv',['check']),patch.object(preflight,'inspect_device',return_value=[]) as inspect,contextlib.redirect_stdout(io.StringIO()):
+  with tempfile.TemporaryDirectory() as folder,patch.dict(os.environ,{'AGORA_WORKSPACE':folder,'AGORA_SOC':'QCS8550'}),patch('sys.argv',['check','--ubuntu','22.04']),patch.object(preflight,'inspect_device',return_value=[]) as inspect,contextlib.redirect_stdout(io.StringIO()):
    self.assertEqual(preflight.main(),0);inspect.assert_called_once_with(Path(folder),'QCS8550','22.04','ubuntu')
  def test_failed_check_returns_failure(self):
   results=[{'status':'FAILED','check':'architecture','expected':'aarch64','actual':'x86_64'}]
@@ -20,7 +20,7 @@ class EnvironmentTests(unittest.TestCase):
   script='source "$1"; env'
   output=subprocess.check_output(['bash','-c',script,'bash',str(ROOT/'agora/agora.env.example')],text=True,env={'PATH':os.environ['PATH'],'HOME':str(Path.home())})
   values=dict(line.split('=',1) for line in output.splitlines() if '=' in line)
-  expected={'AGORA_WORKSPACE','AGORA_CONTENT_ID','AGORA_CODE_REPO','AGORA_CODE_REF','AGORA_RESOURCE_REPO','AGORA_RESOURCE_REF','AGORA_SOC','AGORA_OS','AGORA_OS_VERSION'}
+  expected={'AGORA_WORKSPACE','AGORA_SOC'}
   self.assertEqual({key for key in values if key.startswith('AGORA_')},expected)
   self.assertFalse(any(key.startswith('A8_') for key in values))
  def test_project_resource_selection_excludes_other_soc_graphs(self):

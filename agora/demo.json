@@ -57,8 +57,12 @@
     ]
   },
   "documentation": "docs/AGORA_DEPLOY.md",
-  "note": "Global configuration declares content, sources, workspace and target hardware/OS only. Project metadata owns resource filters and application-specific options. Only QCS8550/Ubuntu22.04 is currently qualified end-to-end.",
-  "resource_selection": "agora/resources.env",
+  "note": "The global configuration contains only workspace and SoC. Repository URLs are explicit in the guide. Hardware-named HF branches contain common assets and one selected target. Only QCS8550/Ubuntu22.04 is currently qualified end-to-end.",
+  "resource_selection": {
+    "method": "git-lfs",
+    "branch": "$AGORA_SOC",
+    "legacy_filter": "agora/resources.env"
+  },
   "application_configuration": {
     "audio_clock": "models.json:audio_clock_ms",
     "web_port": "demo_server.py --port (default 8765)"
