@@ -8,14 +8,26 @@ During dependency setup, install huggingface_hub in the project virtual environm
 
 ```bash
 cd "$AGORA_WORKSPACE/code"
-.venv/bin/python -m pip install --upgrade huggingface_hub
+source .venv/bin/activate
+pip install --upgrade huggingface_hub
 ```
+
+Keep using this activated terminal. In a new terminal, source your saved agora.env, change to "$AGORA_WORKSPACE/code", and activate .venv again.
 
 Then download common resources and the selected SoC directory:
 
+### Download common resources
+
 ```bash
-.venv/bin/hf download APLUX-Agora/Audio8-ASR-Infinite-160ms --exclude "targets/*" --local-dir "$AGORA_WORKSPACE/resources"
-.venv/bin/hf download APLUX-Agora/Audio8-ASR-Infinite-160ms --include "targets/$AGORA_SOC/*" --local-dir "$AGORA_WORKSPACE/resources"
+hf download APLUX-Agora/Audio8-ASR-Infinite-160ms \
+  --exclude "targets/*" --local-dir "$AGORA_WORKSPACE/resources"
+```
+
+### Download the SoC model
+
+```bash
+hf download APLUX-Agora/Audio8-ASR-Infinite-160ms \
+  --include "targets/$AGORA_SOC/*" --local-dir "$AGORA_WORKSPACE/resources"
 ```
 
 For 80ms, replace both repository IDs with APLUX-Agora/Audio8-ASR-Infinite-80ms. Supported AGORA_SOC values: QCS8550, QCS8625, IQ8, IQ9. The first command gets common files; the second gets only the selected hardware directory. No Git LFS installation, branch selection, custom CLI, or authentication is required. The default revision is main. See the [official HF CLI guide](https://huggingface.co/docs/huggingface_hub/en/guides/cli).

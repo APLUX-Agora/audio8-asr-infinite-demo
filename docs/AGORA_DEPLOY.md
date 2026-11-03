@@ -68,10 +68,13 @@ sudo apt-get install -y git ffmpeg libsndfile1 python3-venv
 ```bash
 cd "$AGORA_WORKSPACE/code"
 python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m pip install --upgrade huggingface_hub
-.venv/bin/python -m pip check
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install --upgrade huggingface_hub
+pip check
 ```
+
+Keep using this activated terminal for the remaining steps. In a new terminal, source your saved agora.env, change to "$AGORA_WORKSPACE/code", and run source .venv/bin/activate before continuing.
 
 The cloud board already has AidLite/QNN; skip that installation there. On your own board, follow BSP/vendor prerequisites first. aid-pkg installs one package per command. Wait for an occupied package lock or contact the administrator; do not remove the lock. System installation requires the device account's sudo privileges. The selected system python3 must support venv and be CPython3.10/3.11/3.12. Stop at an installation error rather than assuming a later pip check validates earlier system operations.
 
@@ -79,10 +82,18 @@ The cloud board already has AidLite/QNN; skip that installation there. On your o
 
 The [160ms model repository](https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-160ms) keeps common resources and all hardware directories together on main. Use the official HF CLI installed in step 3:
 
+### Download common resources
+
 ```bash
-cd "$AGORA_WORKSPACE/code"
-.venv/bin/hf download APLUX-Agora/Audio8-ASR-Infinite-160ms --exclude "targets/*" --local-dir "$AGORA_WORKSPACE/resources"
-.venv/bin/hf download APLUX-Agora/Audio8-ASR-Infinite-160ms --include "targets/$AGORA_SOC/*" --local-dir "$AGORA_WORKSPACE/resources"
+hf download APLUX-Agora/Audio8-ASR-Infinite-160ms \
+  --exclude "targets/*" --local-dir "$AGORA_WORKSPACE/resources"
+```
+
+### Download the SoC model
+
+```bash
+hf download APLUX-Agora/Audio8-ASR-Infinite-160ms \
+  --include "targets/$AGORA_SOC/*" --local-dir "$AGORA_WORKSPACE/resources"
 ```
 
 The first command gets common resources; the second gets the selected hardware directory. For 80ms, replace both repository IDs with APLUX-Agora/Audio8-ASR-Infinite-80ms. The configuration stays the same. Public downloads need no login. Selected model files occupy about 3.3 GiB; allow at least 8 GiB for the workspace and dependencies. Re-running these commands reuses current files and retrieves missing or changed files. It does not delete unrelated files. No Git LFS, sparse checkout, or hardware branch is needed. See [model setup](MODEL_SETUP.md) and the [official HF CLI guide](https://huggingface.co/docs/huggingface_hub/en/guides/cli).
@@ -104,7 +115,7 @@ Choose either the 20-second file example or the Web Demo. The model package decl
 ### 20-second file transcription
 
 ```bash
-.venv/bin/python examples/python/transcribe_file.py examples/audio/quickstart_en_20s.wav \
+python examples/python/transcribe_file.py examples/audio/quickstart_en_20s.wav \
   --models "$AGORA_WORKSPACE/resources" --lang en
 ```
 
