@@ -8,8 +8,8 @@
   },
   "workspace": {
     "configurable": true,
-    "code": "audio8-asr-infinite-demo",
-    "models": "models/audio8-{clock_ms}ms",
+    "code": "code",
+    "resources": "resources",
     "configuration": "agora.env"
   },
   "variants": [
@@ -57,5 +57,10 @@
     ]
   },
   "documentation": "docs/AGORA_DEPLOY.md",
-  "note": "Agora fills standard Bash parameters and presents normal development commands. No CLI wrapper. Current native SDK qualification covers QCS8550/Ubuntu22.04 only."
+  "note": "Global configuration declares content, sources, workspace and target hardware/OS only. Project metadata owns resource filters and application-specific options. Only QCS8550/Ubuntu22.04 is currently qualified end-to-end.",
+  "resource_selection": "agora/resources.env",
+  "application_configuration": {
+    "audio_clock": "models.json:audio_clock_ms",
+    "web_port": "demo_server.py --port (default 8765)"
+  }
 }

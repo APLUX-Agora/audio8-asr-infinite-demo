@@ -9,7 +9,7 @@ import shutil
 from pathlib import Path
 
 
-def inspect_device(workspace, expected_soc, expected_ubuntu):
+def inspect_device(workspace, expected_soc, expected_ubuntu, expected_os="ubuntu"):
     results = []
     def add(status, name, expected, actual):
         results.append({'status': status, 'check': name, 'expected': expected, 'actual': actual})
@@ -21,8 +21,8 @@ def inspect_device(workspace, expected_soc, expected_ubuntu):
     arch = platform.machine()
     add('CHECKED' if arch == 'aarch64' else 'FAILED', 'Architecture', 'aarch64', arch)
     release = dict(re.findall(r'^([A-Z_]+)=["\']?([^"\'\n]*)', read('/etc/os-release'), re.M))
-    os_ok = release.get('ID') == 'ubuntu' and release.get('VERSION_ID') == expected_ubuntu
-    add('CHECKED' if os_ok else 'FAILED', 'Operating system', 'Ubuntu ' + expected_ubuntu, release.get('PRETTY_NAME', 'Unknown'))
+    os_ok = release.get('ID') == expected_os and release.get('VERSION_ID') == expected_ubuntu
+    add('CHECKED' if os_ok else 'FAILED', 'Operating system', expected_os + ' ' + expected_ubuntu, release.get('PRETTY_NAME', 'Unknown'))
     machine = read('/sys/devices/soc0/machine')
     soc_id = read('/sys/devices/soc0/soc_id')
     fingerprint = (machine + ' ' + read('/proc/device-tree/compatible')).lower()
@@ -59,11 +59,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--workspace', default=os.environ.get('AGORA_WORKSPACE', str(Path.home() / 'agora-workspace')))
     parser.add_argument('--soc', default=os.environ.get('AGORA_SOC'))
-    parser.add_argument('--ubuntu', default=os.environ.get('AGORA_UBUNTU'))
+    parser.add_argument('--ubuntu', default=os.environ.get('AGORA_OS_VERSION'))
+    parser.add_argument('--os', default=os.environ.get('AGORA_OS', 'ubuntu'))
     args = parser.parse_args()
     if not args.soc or not args.ubuntu:
         parser.error('Source agora.env first, or supply --soc and --ubuntu')
-    results = inspect_device(Path(args.workspace).expanduser().absolute(), args.soc, args.ubuntu)
+    results = inspect_device(Path(args.workspace).expanduser().absolute(), args.soc, args.ubuntu, args.os)
     for result in results:
         print(f"[{result['status']}] {result['check']} | Expected: {result['expected']} | Actual: {result['actual']}")
     failed = sum(r['status'] == 'FAILED' for r in results)

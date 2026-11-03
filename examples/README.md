@@ -1,6 +1,6 @@
 # SDK examples
 
-Run from the checkout root after [installation](../docs/AGORA_DEPLOY.md#3-环境搭建) and [model placement](../docs/MODEL_SETUP.md).
+Run from the checkout root after [installation](../docs/AGORA_DEPLOY.md#3-set-up-dependencies) and [model placement](../docs/MODEL_SETUP.md).
 The Python programs use this Demo's `.venv` and its pip-installed SDK; they do not import SDK files from the checkout. They use the editable SDK audio adapter for WAV/FLAC/MP3, mono/stereo conversion and 16kHz resampling. More than two channels require explicit selection in application code. Their inference calls use the shipped Python SDK; the C++ example calls the same library's C ABI.
 
 ## Python file transcription

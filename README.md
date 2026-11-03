@@ -14,27 +14,24 @@ SDK version 0.9.0 supports the configurable models.json version 2 package.
 
 ## Agora deployment
 
-Use standard Git, Python venv, the Hugging Face CLI, and the project's examples. No Agora CLI is required.
+Use standard Git, Python venv, the Hugging Face CLI, and project commands. No Agora CLI is required.
 
-**Declare parameters once in `agora.env`, source the file, then run normal commands.** The configuration contains your workspace, repositories, SoC, operating system, model target, paths, and application port. It does not contain credentials or generate another parameter file. The GitHub and HF repositories are public: HTTPS cloning and anonymous model downloads work without SSH keys or HF tokens.
+**The global configuration contains common deployment information only:** workspace, content ID, code/resource repositories and versions, SoC, and operating system. Copy the [configuration template](agora/agora.env.example) and edit it yourself, or download the same format prefilled by Agora from your content/hardware selections. Save it on the device and source it once in Bash.
 
-Follow the [five-step deployment guide](docs/AGORA_DEPLOY.md):
+Follow the [deployment guide](docs/AGORA_DEPLOY.md). Agora displays the corresponding steps in Chinese; this repository and the HF model cards are in English.
 
-1. Check the environment: create and load the configuration, then compare expected and detected conditions.
-2. Get the code: clone the repository and enter its directory.
-3. Set up dependencies: install missing system prerequisites and create a project venv.
-4. Get model resources: download common files and the selected SoC target.
-5. Run a test: use the 20-second audio sample, or start the Web Demo separately.
+The Audio8 clock is read from the selected package's models.json. The web port is a normal application launch option. Neither belongs in the global configuration. The project maintains its SoC/resource filters in [agora/resources.env](agora/resources.env); developers do not maintain model filenames in their global configuration.
 
-The [configuration template](agora/agora.env.example) is editable. Agora fills the same parameters from your selected content and hardware; developers using GitHub can edit the template themselves. After opening a new terminal, source your configuration again. Existing checkouts, updates, and troubleshooting remain under your control.
+Every workspace uses the same directory convention:
 
 ```text
-~/my-asr-demo/                         # Choose your own name and location
-├── agora.env
-├── check-environment.py
-├── audio8-asr-infinite-demo/          # Code and project .venv
-└── models/audio8-160ms/               # HF model package root
+$AGORA_WORKSPACE/
+├── code/                 # Git checkout and its .venv
+├── resources/            # Selected HF package root
+└── check-environment.py
 ```
+
+Use a separate workspace for a different content/hardware combination to avoid mixing checkouts or model targets. Existing checkout updates remain your responsibility. Source the saved global configuration again in a new terminal.
 
 ## Supported platforms
 
