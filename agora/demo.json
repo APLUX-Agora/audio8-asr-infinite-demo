@@ -27,22 +27,22 @@
   "targets": {
     "QCS8550": {
       "ubuntu": "22.04",
-      "model_target": "qcs8550_qnn248",
+      "model_target": "QCS8550",
       "qualified": true
     },
     "QCS8625": {
       "ubuntu": "22.04",
-      "model_target": "qcs8625_qnn248",
+      "model_target": "QCS8625",
       "qualified": false
     },
     "IQ8": {
       "ubuntu": "24.04",
-      "model_target": "qcs8275_qnn248",
+      "model_target": "IQ8",
       "qualified": false
     },
     "IQ9": {
       "ubuntu": "24.04",
-      "model_target": "qcs9075_qnn248",
+      "model_target": "IQ9",
       "qualified": false
     }
   },
@@ -57,11 +57,12 @@
     ]
   },
   "documentation": "docs/AGORA_DEPLOY.md",
-  "note": "The global configuration contains only workspace and SoC. Repository URLs are explicit in the guide. Hardware-named HF branches contain common assets and one selected target. Only QCS8550/Ubuntu22.04 is currently qualified end-to-end.",
+  "note": "Global configuration contains only workspace and SoC. Main contains common resources and targets/<SoC> folders. Download with the official HF CLI. Only QCS8550/Ubuntu22.04 is currently qualified end-to-end.",
   "resource_selection": {
-    "method": "git-lfs",
-    "branch": "$AGORA_SOC",
-    "legacy_filter": "agora/resources.env"
+    "method": "hf download",
+    "revision": "main",
+    "common_exclude": "targets/*",
+    "target_include": "targets/$AGORA_SOC/*"
   },
   "application_configuration": {
     "audio_clock": "models.json:audio_clock_ms",

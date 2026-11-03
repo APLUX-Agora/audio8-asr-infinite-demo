@@ -25,7 +25,7 @@ class EnvironmentTests(unittest.TestCase):
   self.assertFalse(any(key.startswith('A8_') for key in values))
  def test_project_resource_selection_excludes_other_soc_graphs(self):
   import subprocess
-  targets={'QCS8550':'qcs8550_qnn248','QCS8625':'qcs8625_qnn248','IQ8':'qcs8275_qnn248','IQ9':'qcs9075_qnn248'}
+  targets={'QCS8550':'QCS8550','QCS8625':'QCS8625','IQ8':'IQ8','IQ9':'IQ9'}
   for soc,target in targets.items():
    with self.subTest(soc=soc):
     script='source "$1"; printf "%s\\n" "$AUDIO8_LFS_INCLUDE"'

@@ -14,7 +14,7 @@ curl -fL https://raw.githubusercontent.com/APLUX-Agora/audio8-asr-infinite-demo/
 | Parameter | Meaning |
 | --- | --- |
 | AGORA_WORKSPACE | Your custom workspace path; use one directory per task |
-| AGORA_SOC | Hardware branch: QCS8550, QCS8625, IQ8, or IQ9 |
+| AGORA_SOC | Target SoC: QCS8550, QCS8625, IQ8, or IQ9 |
 
 GitHub and HF repository URLs appear directly in the commands below. They are not environment variables. The code directory is workspace/code and model data is workspace/resources. The package owns its application defaults. Opening a new terminal? Source the saved agora.env again.
 
@@ -60,7 +60,7 @@ sudo aid-pkg install aidlite-qnn248
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y git git-lfs ffmpeg libsndfile1 python3-venv
+sudo apt-get install -y git ffmpeg libsndfile1 python3-venv
 ```
 
 ### Project virtual environment
@@ -69,6 +69,7 @@ sudo apt-get install -y git git-lfs ffmpeg libsndfile1 python3-venv
 cd "$AGORA_WORKSPACE/code"
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install --upgrade huggingface_hub
 .venv/bin/python -m pip check
 ```
 
@@ -76,21 +77,25 @@ The cloud board already has AidLite/QNN; skip that installation there. On your o
 
 ## 4. Get model resources
 
-The [160ms model repository](https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-160ms) provides one self-contained branch per SoC. Git LFS downloads common files and the selected hardware target with a single clone:
+The [160ms model repository](https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-160ms) keeps common resources and all hardware directories together on main. Use the official HF CLI installed in step 3:
 
 ```bash
-git clone --depth 1 --branch "$AGORA_SOC" https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-160ms "$AGORA_WORKSPACE/resources"
+cd "$AGORA_WORKSPACE/code"
+.venv/bin/hf download APLUX-Agora/Audio8-ASR-Infinite-160ms --exclude "targets/*" --local-dir "$AGORA_WORKSPACE/resources"
+.venv/bin/hf download APLUX-Agora/Audio8-ASR-Infinite-160ms --include "targets/$AGORA_SOC/*" --local-dir "$AGORA_WORKSPACE/resources"
 ```
 
-For the 80ms model, replace the repository URL with https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-80ms. The global configuration stays the same. Each branch is about 3.3 GiB of model data; allow at least 12 GiB for model files, LFS cache, code, and dependencies. Public repositories require no login. Existing destinations are not overwritten.
+The first command gets common resources; the second gets the selected hardware directory. For 80ms, replace both repository IDs with APLUX-Agora/Audio8-ASR-Infinite-80ms. The configuration stays the same. Public downloads need no login. Selected model files occupy about 3.3 GiB; allow at least 8 GiB for the workspace and dependencies. Re-running these commands reuses current files and retrieves missing or changed files. It does not delete unrelated files. No Git LFS, sparse checkout, or hardware branch is needed. See [model setup](MODEL_SETUP.md) and the [official HF CLI guide](https://huggingface.co/docs/huggingface_hub/en/guides/cli).
 
 Optional integrity check:
 
 ```bash
 cd "$AGORA_WORKSPACE/resources"
-sha256sum -c SHA256SUMS
+sha256sum -c SHA256SUMS --ignore-missing
 cd "$AGORA_WORKSPACE/code"
 ```
+
+Unselected hardware directories are intentionally absent. This verifies downloaded files but does not prove completeness by itself; application preflight also checks required files and hashes.
 
 ## 5. Run a test
 

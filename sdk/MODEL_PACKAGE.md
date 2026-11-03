@@ -11,12 +11,12 @@ The root models.json is the interface between HF resources and the native/Python
     {
       "soc": "qcs8550",
       "qnn_version": "2.48",
-      "directory": "targets/qcs8550_qnn248",
+      "directory": "targets/QCS8550",
       "files": {
-        "encoder": "targets/qcs8550_qnn248/encoder.aidem",
-        "adapter": "targets/qcs8550_qnn248/adapter.aidem",
-        "decoder_1": "targets/qcs8550_qnn248/decoder_1.aidem",
-        "decoder_2": "targets/qcs8550_qnn248/decoder_2.aidem"
+        "encoder": "targets/QCS8550/encoder.aidem",
+        "adapter": "targets/QCS8550/adapter.aidem",
+        "decoder_1": "targets/QCS8550/decoder_1.aidem",
+        "decoder_2": "targets/QCS8550/decoder_2.aidem"
       }
     }
   ],
