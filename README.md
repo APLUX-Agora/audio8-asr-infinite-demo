@@ -14,7 +14,7 @@ SDK version 0.9.0 supports the configurable models.json version 2 package.
 
 ## Agora deployment
 
-Use standard Git, Python venv, the Hugging Face CLI, and project commands. No Agora CLI is required.
+Use standard Git, Python venv, Git LFS, and project commands. No Agora CLI is required.
 
 **The global configuration contains common deployment information only:** workspace, content ID, code/resource repositories and versions, SoC, and operating system. Copy the [configuration template](agora/agora.env.example) and edit it yourself, or download the same format prefilled by Agora from your content/hardware selections. Save it on the device and source it once in Bash.
 

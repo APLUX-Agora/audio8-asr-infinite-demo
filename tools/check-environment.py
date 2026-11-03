@@ -6,6 +6,7 @@ import os
 import platform
 import re
 import shutil
+import subprocess
 from pathlib import Path
 
 
@@ -37,13 +38,15 @@ def inspect_device(workspace, expected_soc, expected_ubuntu, expected_os="ubuntu
         with __import__('tempfile').TemporaryFile(dir=workspace) as f:
             f.write(b'agora-check')
         available = shutil.disk_usage(workspace).free / 1024**3
-        add('CHECKED' if available >= 8 else 'NEEDS_SETUP', 'Free space', 'At least 8 GiB recommended (about 3.3 GiB for one target, plus code and environment)', f'{available:.1f} GiB')
+        add('CHECKED' if available >= 12 else 'NEEDS_SETUP', 'Free space', 'At least 12 GiB recommended (about 6.6 GiB including LFS cache, plus code and environment)', f'{available:.1f} GiB')
         add('CHECKED', 'Workspace', 'Exists and writable', str(workspace) + f' (free: {available:.1f} GiB)')
     except OSError as exc:
         add('FAILED', 'Workspace', 'Exists and writable', str(exc))
     py_ok = (3, 10) <= __import__('sys').version_info[:2] <= (3, 12)
     add('CHECKED' if py_ok else 'NEEDS_SETUP', 'Python', '3.10 / 3.11 / 3.12', platform.python_version())
     add('CHECKED' if shutil.which('git') else 'FAILED', 'Git', 'Installed', shutil.which('git') or 'Missing; install Git and rerun the check')
+    lfs = subprocess.run(['git', 'lfs', 'version'], capture_output=True, text=True) if shutil.which('git') else None
+    add('CHECKED' if lfs and lfs.returncode == 0 else 'NEEDS_SETUP', 'Git LFS', 'Installed for model downloads', lfs.stdout.strip() if lfs and lfs.returncode == 0 else 'Missing; install git-lfs in step 3')
     add('CHECKED' if importlib.util.find_spec('venv') else 'NEEDS_SETUP', 'Python venv', 'venv module available in the selected Python', 'Found' if importlib.util.find_spec('venv') else 'Missing')
     add('CHECKED' if shutil.which('ffmpeg') else 'NEEDS_SETUP', 'FFmpeg', 'Installed (audio conversion and Web Demo)', shutil.which('ffmpeg') or 'Not installed')
     libraries = [Path('/usr/local/lib') / f for f in ['libaidlite.so', 'libaidlite_qnn248.so']]

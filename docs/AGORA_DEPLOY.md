@@ -69,7 +69,7 @@ sudo aid-pkg install aidlite-qnn248
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y git ffmpeg libsndfile1 python3-venv
+sudo apt-get install -y git git-lfs ffmpeg libsndfile1 python3-venv
 ```
 
 ### Project virtual environment
@@ -85,18 +85,21 @@ The cloud board already has AidLite/QNN; skip that installation there. On your o
 
 ## 4. Get model resources
 
-The project resource declaration selects the files for AGORA_SOC. The global configuration does not contain file lists or Audio8 runtime parameters. A target is about 3.3 GiB; allow at least 8 GiB for the workspace.
+The project resource declaration selects the files for AGORA_SOC. The global configuration does not contain file lists or Audio8 runtime parameters. A target is about 3.3 GiB; allow at least 12 GiB for the workspace.
 
 ```bash
 source agora/resources.env
-.venv/bin/python -m pip install huggingface_hub
-.venv/bin/hf download "$AGORA_RESOURCE_REPO" --revision "$AGORA_RESOURCE_REF" \
-  --local-dir "$AGORA_WORKSPACE/resources" --include "${AUDIO8_DOWNLOAD_PATTERNS[@]}"
+GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 --branch "$AGORA_RESOURCE_REF" \
+  "https://huggingface.co/$AGORA_RESOURCE_REPO" "$AGORA_WORKSPACE/resources"
+git -C "$AGORA_WORKSPACE/resources" lfs install --local
+GIT_LFS_SKIP_SMUDGE=1 git -C "$AGORA_WORKSPACE/resources" sparse-checkout set --no-cone \
+  '/*' '!/targets/*' "/targets/$AUDIO8_MODEL_TARGET/"
+GIT_LFS_SKIP_SMUDGE=1 git -C "$AGORA_WORKSPACE/resources" lfs pull --include="$AUDIO8_LFS_INCLUDE"
 ```
 
 Source agora/resources.env from the code checkout. This project-owned file maps AGORA_SOC to an Audio8 target and maintains the HF include patterns. It does not install anything or change global declarations. Unsupported SoCs are rejected; do not continue downloading after that error.
 
-The standard HF command downloads common files and the selected target into one package root. No unpacking or manual moves are needed. Pass workspace/resources, not its targets subdirectory, to --models. For optional hash verification:
+Git LFS downloads common files and the selected target into one package root. Sparse checkout omits other targets, so their pointer files cannot be mistaken for model resources. The shallow clone uses a branch or tag; use native Git checkout/fetch for an exact commit. Git LFS keeps an object cache as well as working files (about 6.6 GiB combined for this target). No unpacking or manual moves are needed. Pass workspace/resources, not its targets subdirectory, to --models. For optional hash verification:
 
 ```bash
 cd "$AGORA_WORKSPACE/resources"
@@ -104,7 +107,7 @@ sha256sum --ignore-missing -c SHA256SUMS
 cd "$AGORA_WORKSPACE/code"
 ```
 
---ignore-missing verifies present files and allows unselected target files to be absent; it does not prove completeness. Web startup checks required resources and hashes. AGORA_RESOURCE_REF supports a branch, tag, or immutable HF commit.
+--ignore-missing verifies present files and allows unselected target files to be absent; it does not prove completeness. Web startup checks required resources and hashes. AGORA_RESOURCE_REF selects a branch or tag for this clone command; exact commits use native Git operations.
 
 ## 5. Run a test
 

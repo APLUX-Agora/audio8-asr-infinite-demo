@@ -8,12 +8,15 @@ After sourcing the global configuration and creating the project venv, run from 
 
 ```bash
 source agora/resources.env
-.venv/bin/python -m pip install huggingface_hub
-.venv/bin/hf download "$AGORA_RESOURCE_REPO" --revision "$AGORA_RESOURCE_REF" \
-  --local-dir "$AGORA_WORKSPACE/resources" --include "${AUDIO8_DOWNLOAD_PATTERNS[@]}"
+GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 --branch "$AGORA_RESOURCE_REF" \
+  "https://huggingface.co/$AGORA_RESOURCE_REPO" "$AGORA_WORKSPACE/resources"
+git -C "$AGORA_WORKSPACE/resources" lfs install --local
+GIT_LFS_SKIP_SMUDGE=1 git -C "$AGORA_WORKSPACE/resources" sparse-checkout set --no-cone \
+  '/*' '!/targets/*' "/targets/$AUDIO8_MODEL_TARGET/"
+GIT_LFS_SKIP_SMUDGE=1 git -C "$AGORA_WORKSPACE/resources" lfs pull --include="$AUDIO8_LFS_INCLUDE"
 ```
 
-The file filters are project metadata, not editable global variables. They may change with model package versions. The HF CLI remains the standard downloader; no Agora CLI is involved. Resources are public and anonymous.
+The file filters are project metadata, not editable global variables. They may change with model package versions. Git LFS is the standard downloader; no Agora CLI is involved. Resources are public and anonymous. Install git-lfs as a system prerequisite. Git LFS keeps both cached objects and working files (about 6.6 GiB total); sparse checkout omits unselected targets. An existing resource directory is not overwritten. The clone command accepts a branch or tag; exact commits use native Git checkout/fetch.
 
 ## Target mapping and qualification
 
@@ -39,7 +42,7 @@ $AGORA_WORKSPACE/resources/
 └── LICENSES/ NOTICE README.md
 ```
 
-No model bytes, SDK ABI, or models.json format are changed by this configuration work. A single target is about 3.3 GiB; allow at least 8 GiB for a workspace. Choose a separate workspace when switching content/hardware/model variants so old target files cannot be selected accidentally.
+No model bytes, SDK ABI, or models.json format are changed by this configuration work. A single target is about 3.3 GiB; allow at least 12 GiB for a workspace. Choose a separate workspace when switching content/hardware/model variants so old target files cannot be selected accidentally.
 
 ## Integrity
 
