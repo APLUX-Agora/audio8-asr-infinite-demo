@@ -14,28 +14,27 @@ SDK version 0.9.0 supports the configurable models.json version 2 package.
 
 ## Agora 开发者部署
 
-本仓库是面向 Agora 的独立副本。采用普通 Git、Python venv、Hugging Face CLI 和项目脚本，不封装 Agora CLI。参数集中放在 `agora-run.json`；环境检查通过后生成 `agora-env.sh`，后续命令加载它。配置中不保存 SSH 密钥、HF token 或 sudo 密码。
+采用普通 Git、Python venv、Hugging Face CLI 和项目脚本，不封装 Agora CLI。
 
-**从 [完整部署指南](docs/AGORA_DEPLOY.md) 开始。** 网页与该指南使用相同的五个环节：
+**参数在 `agora.env` 中定义一次，source 后生效，后面执行正常命令。** workspace 路径、仓库、SoC、系统、模型目标和端口都在同一份配置里；不生成第二份参数文件。GitHub 和 HF 均公开，无需 GitHub SSH 授权或 HF token。
 
-1. 环境检查：自定义 workspace，校验 JSON 参数与真实设备，逐项显示预期、实际和结果。
-2. 获取代码：通过 HTTPS clone 公共仓库；已有代码时保留，更新由开发者决定。
-3. 环境搭建：分开确认系统运行时、系统工具和项目 venv；前置失败不继续当前段。
-4. 获取资源：从对应 `-agora` HF 仓库下载公共文件及一个 SoC，校验已下载文件。
-5. 运行测试：先用 20 秒文件样例，再按需启动 Web Demo；两种测试独立执行。
+从 [五步部署指南](docs/AGORA_DEPLOY.md) 开始：
 
-默认示例工作目录可任意修改，不固定在租约目录或仓库内：
+1. 环境检查：创建并加载配置，逐项查看预期与实际环境。
+2. 获取代码：正常 git clone 并进入代码目录。
+3. 环境搭建：缺什么装什么，创建项目独立 venv。
+4. 获取资源：HF 下载公共资源及所选 SoC。
+5. 运行测试：20秒文件样例，或按需启动 Web Demo。
+
+[配置文件示例](agora/agora.env.example) 可直接修改。网页按你的内容和硬件选择生成同样的配置与命令。命令不包裹条件判断或子 shell；已有目录、更新与排错由开发者决定。打开新终端后 source 一次配置即可继续。
 
 ```text
-~/my-asr-demo/
-├── agora-run.json                      # 可编辑的运行声明
-├── check-environment.py                # 只检查，不自动安装
-├── agora-env.sh                        # 由检查脚本生成，不手工维护
-├── audio8-asr-infinite-demo/      # Git 代码与 .venv
-└── models/audio8-160ms/                 # HF 模型根目录，含 models.json
+~/my-asr-demo/                         # 名字与路径自定义
+├── agora.env
+├── check-environment.py
+├── audio8-asr-infinite-demo/          # 代码与 .venv
+└── models/audio8-160ms/               # HF 模型根目录
 ```
-
-修改 JSON 后重新运行检查。终端和远程桌面都使用同一用户主目录；切换终端不会自动继承 shell 变量，每段命令开头加载参数文件即可。`agora/demo.json` 描述项目资源与目标，不是安装执行器。
 
 ## 支持范围
 

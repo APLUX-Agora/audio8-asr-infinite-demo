@@ -9,7 +9,8 @@
   "workspace": {
     "configurable": true,
     "code": "audio8-asr-infinite-demo",
-    "models": "models/audio8-{clock_ms}ms"
+    "models": "models/audio8-{clock_ms}ms",
+    "configuration": "agora.env"
   },
   "variants": [
     {
@@ -56,5 +57,5 @@
     ]
   },
   "documentation": "docs/AGORA_DEPLOY.md",
-  "note": "声明资源和兼容性，不自动执行安装；未验收组合不可视为推理兼容承诺。"
+  "note": "网页生成普通 Bash 参数文件和开发命令；不封装 CLI，仅 QCS8550/Ubuntu22.04 已完成当前 SDK 真机验收。"
 }
