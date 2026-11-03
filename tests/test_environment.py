@@ -28,17 +28,17 @@ class EnvironmentTests(unittest.TestCase):
   targets={'QCS8550':'qcs8550_qnn248','QCS8625':'qcs8625_qnn248','IQ8':'qcs8275_qnn248','IQ9':'qcs9075_qnn248'}
   for soc,target in targets.items():
    with self.subTest(soc=soc):
-    script='source "$1"; printf "%s\\n" "${AUDIO8_DOWNLOAD_PATTERNS[@]}"'
-    patterns=subprocess.check_output(['bash','-c',script,'bash',str(ROOT/'agora/resources.env')],text=True,env={'PATH':os.environ['PATH'],'AGORA_SOC':soc}).splitlines()
+    script='source "$1"; printf "%s\\n" "$AUDIO8_LFS_INCLUDE"'
+    patterns=subprocess.check_output(['bash','-c',script,'bash',str(ROOT/'agora/resources.env')],text=True,env={'PATH':os.environ['PATH'],'AGORA_SOC':soc}).strip().split(',')
     self.assertEqual([p for p in patterns if p.startswith('targets/')],['targets/'+target+'/*'])
-    self.assertIn('models.json',patterns);self.assertIn('embedding.bin',patterns)
+    self.assertIn('embedding.bin',patterns)
  def test_unknown_soc_cannot_select_all_graphs(self):
   import subprocess
   run=subprocess.run(['bash','-c','source "$1"','bash',str(ROOT/'agora/resources.env')],env={'PATH':os.environ['PATH'],'AGORA_SOC':'unknown'},capture_output=True,text=True)
   self.assertNotEqual(run.returncode,0);self.assertIn('no resource target',run.stderr)
  def test_unknown_soc_clears_a_previous_target_selection(self):
   import subprocess
-  script='AGORA_SOC=QCS8550; source "$1"; AGORA_SOC=unknown; source "$1"; printf "%s\\n" "${AUDIO8_DOWNLOAD_PATTERNS[@]}"'
+  script='AGORA_SOC=QCS8550; source "$1"; AGORA_SOC=unknown; source "$1"; printf "%s\\n" "$AUDIO8_LFS_INCLUDE"'
   run=subprocess.run(['bash','-c',script,'bash',str(ROOT/'agora/resources.env')],env={'PATH':os.environ['PATH']},capture_output=True,text=True)
   self.assertEqual(run.stdout.strip(),'__unsupported_soc__')
 if __name__=='__main__':unittest.main()
