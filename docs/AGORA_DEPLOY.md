@@ -1,6 +1,6 @@
 # Agora deployment guide
 
-The global configuration format is shared by Agora and developers using GitHub. It contains only common deployment declarations. This project owns its model-file selection and application options; it does not turn them into global Agora parameters.
+Use normal Git, Git LFS, Python, and shell commands. Agora tasks and direct GitHub users share the same small configuration file. Each task uses an independent workspace and may optionally rent a cloud device.
 
 ## Get your configuration
 
@@ -13,19 +13,10 @@ curl -fL https://raw.githubusercontent.com/APLUX-Agora/audio8-asr-infinite-demo/
 
 | Parameter | Meaning |
 | --- | --- |
-| AGORA_WORKSPACE | Custom workspace path |
-| AGORA_CONTENT_ID | Selected content identifier |
-| AGORA_CODE_REPO | Code repository URL |
-| AGORA_CODE_REF | Code branch or tag, main by default |
-| AGORA_RESOURCE_REPO | HF resource repository |
-| AGORA_RESOURCE_REF | HF resource revision, main by default |
-| AGORA_SOC | Target SoC |
-| AGORA_OS | Operating system ID, such as ubuntu |
-| AGORA_OS_VERSION | Operating system version |
+| AGORA_WORKSPACE | Your custom workspace path; use one directory per task |
+| AGORA_SOC | Hardware branch: QCS8550, QCS8625, IQ8, or IQ9 |
 
-Code always goes to workspace/code; the selected model package goes to workspace/resources. These directories are conventions, not additional configuration fields. Use one workspace per content/hardware combination. For the 80ms variant, select its resource repository; no separate audio-clock parameter is necessary. If you change hardware or model variant, use a fresh workspace to avoid mixing target files.
-
-The code and resources are public. No GitHub SSH key or HF token is needed. Open a new terminal? Source the same saved agora.env before continuing. Run normal commands in order, and fix a failed command before executing the next one.
+GitHub and HF repository URLs appear directly in the commands below. They are not environment variables. The code directory is workspace/code and model data is workspace/resources. The package owns its application defaults. Opening a new terminal? Source the saved agora.env again.
 
 ## 1. Check the environment
 
@@ -38,21 +29,21 @@ source ./agora.env
 mkdir -p "$AGORA_WORKSPACE"
 curl -fL https://raw.githubusercontent.com/APLUX-Agora/audio8-asr-infinite-demo/main/tools/check-environment.py \
   -o "$AGORA_WORKSPACE/check-environment.py"
-python3 "$AGORA_WORKSPACE/check-environment.py"
+python3 "$AGORA_WORKSPACE/check-environment.py" --soc "$AGORA_SOC" --ubuntu 22.04
 ```
 
-The script checks expected versus actual conditions and ensures the workspace is writable. It does not install packages or generate another configuration file. CHECKED means a static condition matches; fix FAILED items, install NEEDS_SETUP prerequisites in step 3, and review BSP/driver details for REVIEW items. Static checks do not qualify inference.
+The example expects Ubuntu 22.04 for QCS8550/QCS8625. Use --ubuntu 24.04 for IQ8/IQ9. The script checks expected versus actual conditions and ensures the workspace is writable. It does not install packages or generate another configuration file. CHECKED means a static condition matches; fix FAILED items, install NEEDS_SETUP prerequisites in step 3, and review BSP/driver details for REVIEW items. Static checks do not qualify inference.
 
 ## 2. Get the code
 
 Clone the code repository and selected branch or tag. Skip cloning for an existing checkout; update it explicitly when needed.
 
 ```bash
-git clone --branch "$AGORA_CODE_REF" "$AGORA_CODE_REPO" "$AGORA_WORKSPACE/code"
+git clone https://github.com/APLUX-Agora/audio8-asr-infinite-demo.git "$AGORA_WORKSPACE/code"
 cd "$AGORA_WORKSPACE/code"
 ```
 
-An existing destination is not overwritten. Use the existing checkout or choose a different workspace. To update a checkout, preserve your edits and run git pull --ff-only in its code directory. AGORA_CODE_REF is a branch or tag for this clone command; use native Git commands separately if you need an exact commit.
+An existing destination is not overwritten. Use the existing checkout or choose a different workspace. To update a checkout, preserve your edits and run git pull --ff-only in its code directory. Use native Git commands if you need another branch, tag, or exact commit.
 
 ## 3. Set up dependencies
 
@@ -85,29 +76,21 @@ The cloud board already has AidLite/QNN; skip that installation there. On your o
 
 ## 4. Get model resources
 
-The project resource declaration selects the files for AGORA_SOC. The global configuration does not contain file lists or Audio8 runtime parameters. A target is about 3.3 GiB; allow at least 12 GiB for the workspace.
+The [160ms model repository](https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-160ms) provides one self-contained branch per SoC. Git LFS downloads common files and the selected hardware target with a single clone:
 
 ```bash
-source agora/resources.env
-GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 --branch "$AGORA_RESOURCE_REF" \
-  "https://huggingface.co/$AGORA_RESOURCE_REPO" "$AGORA_WORKSPACE/resources"
-git -C "$AGORA_WORKSPACE/resources" lfs install --local
-GIT_LFS_SKIP_SMUDGE=1 git -C "$AGORA_WORKSPACE/resources" sparse-checkout set --no-cone \
-  '/*' '!/targets/*' "/targets/$AUDIO8_MODEL_TARGET/"
-GIT_LFS_SKIP_SMUDGE=1 git -C "$AGORA_WORKSPACE/resources" lfs pull --include="$AUDIO8_LFS_INCLUDE"
+git clone --depth 1 --branch "$AGORA_SOC" https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-160ms "$AGORA_WORKSPACE/resources"
 ```
 
-Source agora/resources.env from the code checkout. This project-owned file maps AGORA_SOC to an Audio8 target and maintains the HF include patterns. It does not install anything or change global declarations. Unsupported SoCs are rejected; do not continue downloading after that error.
+For the 80ms model, replace the repository URL with https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-80ms. The global configuration stays the same. Each branch is about 3.3 GiB of model data; allow at least 12 GiB for model files, LFS cache, code, and dependencies. Public repositories require no login. Existing destinations are not overwritten.
 
-Git LFS downloads common files and the selected target into one package root. Sparse checkout omits other targets, so their pointer files cannot be mistaken for model resources. The shallow clone uses a branch or tag; use native Git checkout/fetch for an exact commit. Git LFS keeps an object cache as well as working files (about 6.6 GiB combined for this target). No unpacking or manual moves are needed. Pass workspace/resources, not its targets subdirectory, to --models. For optional hash verification:
+Optional integrity check:
 
 ```bash
 cd "$AGORA_WORKSPACE/resources"
-sha256sum --ignore-missing -c SHA256SUMS
+sha256sum -c SHA256SUMS
 cd "$AGORA_WORKSPACE/code"
 ```
-
---ignore-missing verifies present files and allows unselected target files to be absent; it does not prove completeness. Web startup checks required resources and hashes. AGORA_RESOURCE_REF selects a branch or tag for this clone command; exact commits use native Git operations.
 
 ## 5. Run a test
 

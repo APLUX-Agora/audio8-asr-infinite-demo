@@ -20,7 +20,7 @@ Use standard Git, Python venv, Git LFS, and project commands. No Agora CLI is re
 
 Follow the [deployment guide](docs/AGORA_DEPLOY.md). Agora displays the corresponding steps in Chinese; this repository and the HF model cards are in English.
 
-The Audio8 clock is read from the selected package's models.json. The web port is a normal application launch option. Neither belongs in the global configuration. The project maintains its SoC/resource filters in [agora/resources.env](agora/resources.env); developers do not maintain model filenames in their global configuration.
+The Audio8 clock is read from the selected package's models.json. The web port is a normal application launch option. Neither belongs in the global configuration. The global configuration contains only AGORA_WORKSPACE and AGORA_SOC. Use the explicit GitHub URL to clone code and the HF SoC branch to clone model data. Each task has an independent workspace; developers do not maintain file-selection filters.
 
 Every workspace uses the same directory convention:
 
