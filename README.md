@@ -12,40 +12,40 @@ Source: Lorna Mitchell, FOSDEM 2025, **CC BY 2.0 BE**. Original credits are reta
 
 SDK version 0.9.0 supports the configurable models.json version 2 package.
 
-## Agora 开发者部署
+## Agora deployment
 
-采用普通 Git、Python venv、Hugging Face CLI 和项目脚本，不封装 Agora CLI。
+Use standard Git, Python venv, the Hugging Face CLI, and the project's examples. No Agora CLI is required.
 
-**参数在 `agora.env` 中定义一次，source 后生效，后面执行正常命令。** workspace 路径、仓库、SoC、系统、模型目标和端口都在同一份配置里；不生成第二份参数文件。GitHub 和 HF 均公开，无需 GitHub SSH 授权或 HF token。
+**Declare parameters once in `agora.env`, source the file, then run normal commands.** The configuration contains your workspace, repositories, SoC, operating system, model target, paths, and application port. It does not contain credentials or generate another parameter file. The GitHub and HF repositories are public: HTTPS cloning and anonymous model downloads work without SSH keys or HF tokens.
 
-从 [五步部署指南](docs/AGORA_DEPLOY.md) 开始：
+Follow the [five-step deployment guide](docs/AGORA_DEPLOY.md):
 
-1. 环境检查：创建并加载配置，逐项查看预期与实际环境。
-2. 获取代码：正常 git clone 并进入代码目录。
-3. 环境搭建：缺什么装什么，创建项目独立 venv。
-4. 获取资源：HF 下载公共资源及所选 SoC。
-5. 运行测试：20秒文件样例，或按需启动 Web Demo。
+1. Check the environment: create and load the configuration, then compare expected and detected conditions.
+2. Get the code: clone the repository and enter its directory.
+3. Set up dependencies: install missing system prerequisites and create a project venv.
+4. Get model resources: download common files and the selected SoC target.
+5. Run a test: use the 20-second audio sample, or start the Web Demo separately.
 
-[配置文件示例](agora/agora.env.example) 可直接修改。网页按你的内容和硬件选择生成同样的配置与命令。命令不包裹条件判断或子 shell；已有目录、更新与排错由开发者决定。打开新终端后 source 一次配置即可继续。
+The [configuration template](agora/agora.env.example) is editable. Agora fills the same parameters from your selected content and hardware; developers using GitHub can edit the template themselves. After opening a new terminal, source your configuration again. Existing checkouts, updates, and troubleshooting remain under your control.
 
 ```text
-~/my-asr-demo/                         # 名字与路径自定义
+~/my-asr-demo/                         # Choose your own name and location
 ├── agora.env
 ├── check-environment.py
-├── audio8-asr-infinite-demo/          # 代码与 .venv
-└── models/audio8-160ms/               # HF 模型根目录
+├── audio8-asr-infinite-demo/          # Code and project .venv
+└── models/audio8-160ms/               # HF model package root
 ```
 
-## 支持范围
+## Supported platforms
 
-SDK 0.9.0；CPython 3.10 / 3.11 / 3.12。实际验收范围为 QCS8550 / Ubuntu 22.04 / AidLite 2.5.0.284 / QNN 2.48，含 80ms 和 160ms。HF 同时有 QCS8625、IQ8/QCS8275、IQ9/QCS9075 资源，但存在模型文件不等于完整运行链路已通过验收。其它 SoC、Ubuntu 24.04/26.04 必须另做真机验证，不在此承诺兼容。
+SDK 0.9.0 supports CPython 3.10 / 3.11 / 3.12. The qualified combination is QCS8550 / Ubuntu 22.04 / AidLite 2.5.0.284 / QNN 2.48, with both 80ms and 160ms packages. QCS8625, IQ8/QCS8275, and IQ9/QCS9075 resource files are available, but their presence does not qualify the entire SDK/BSP/runtime stack. Other SoCs and Ubuntu 24.04/26.04 require separate on-device validation.
 
-模型仓库：
+Model repositories:
 
-- [160ms Agora 资源](https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-160ms)
-- [80ms Agora 资源](https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-80ms)
+- [160ms resources](https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-160ms)
+- [80ms resources](https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-80ms)
 
-本仓库与两个 HF 模型仓库均公开，Git 使用 HTTPS、HF 匿名下载即可。若改用私有分支或受控模型，按服务原生方式单独认证，不在配置文件中保存凭据。模型下载和目录说明见 [MODEL_SETUP.md](docs/MODEL_SETUP.md)。
+These repositories are public. If you use a private fork or restricted model later, authenticate through the service's standard tools and keep credentials out of configuration files. See [model resource setup](docs/MODEL_SETUP.md).
 
 ## API reference
 

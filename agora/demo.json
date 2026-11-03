@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "id": "live-transcribe",
-  "name": "Audio8-ASR-Infinite 流式转录",
+  "name": "Audio8-ASR-Infinite Streaming Transcription",
   "source": {
     "repository": "https://github.com/APLUX-Agora/audio8-asr-infinite-demo.git",
     "revision": "main"
@@ -57,5 +57,5 @@
     ]
   },
   "documentation": "docs/AGORA_DEPLOY.md",
-  "note": "网页生成普通 Bash 参数文件和开发命令；不封装 CLI，仅 QCS8550/Ubuntu22.04 已完成当前 SDK 真机验收。"
+  "note": "Agora fills standard Bash parameters and presents normal development commands. No CLI wrapper. Current native SDK qualification covers QCS8550/Ubuntu22.04 only."
 }

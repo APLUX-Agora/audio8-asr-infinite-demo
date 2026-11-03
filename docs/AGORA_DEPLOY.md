@@ -1,28 +1,24 @@
-# Agora 开发者部署指南
+# Agora deployment guide
 
-以流式 ASR / 160ms / QCS8550 / Ubuntu22.04 为例。使用普通 Git、Python venv、HF CLI 和项目脚本，没有 Agora CLI。
+Example configuration: streaming ASR / 160ms / QCS8550 / Ubuntu 22.04. Use standard Git, Python venv, the HF CLI, and project commands. No Agora CLI is required.
 
-**一份配置，加载一次，后面正常执行命令。** 第一步创建 `agora.env`，把 workspace、代码仓库、模型仓库、SoC、系统、目录和运行参数定义好；执行 `source` 后在当前 Bash 终端生效。配置可编辑，路径和名字可自行选择。打开新终端时重新 source 一次即可，不必每一步加载。
+**One parameter file, sourced once, followed by normal commands.** Edit `agora.env` to select your workspace, repositories, SoC, operating system, directories, audio clock, and port. The model-file array declares the common files and selected target. The file contains parameters, not installation logic or credentials. Open a new terminal? Source it again before continuing.
 
-`agora.env` 是可读的 Bash 参数文件，其中的数组只声明本次要下载的模型文件。里面没有安装动作、凭据或条件判断。JSON 不是这套部署流程的输入，也不再生成第二份环境变量文件。
-
-GitHub 与两个 HF 仓库均公开，可以直接 HTTPS clone、匿名下载，不需要 SSH 密钥或 token。按顺序逐条执行命令；一条失败就先解决，不继续后面的命令。指南不替你覆盖已有目录或决定如何更新代码。
-
-首次建议使用新 workspace，避免复用旧 Pandora checkout。后续目录如下：
+The code and both model repositories are public. No SSH key or HF token is needed. Run commands one at a time and resolve errors before proceeding. Existing checkouts and updates are your responsibility; these commands do not reset your work. Choose a new workspace when migrating from an older Pandora checkout.
 
 ```text
-~/my-asr-demo/                         # 名字与路径自定义
-├── agora.env                         # 唯一的部署参数文件
-├── check-environment.py              # 只检查，不安装
-├── audio8-asr-infinite-demo/          # 代码与项目 .venv
-└── models/audio8-160ms/               # 独立模型根目录
+~/my-asr-demo/                         # Choose your own name and location
+├── agora.env                         # Deployment parameters
+├── check-environment.py              # Checks only; no installation
+├── audio8-asr-infinite-demo/          # Code and project .venv
+└── models/audio8-160ms/               # Separate model package root
 ```
 
-## 1. 环境检查
+## 1. Check the environment
 
-参数在 agora.env 中定义一次。source 后在当前终端生效，再检查设备环境；后续命令直接使用这些变量。
+Define parameters once in agora.env. Source it in the current Bash terminal, then check the device. Later steps use the loaded variables.
 
-### 1. 创建配置文件 · agora.env
+### Create the configuration file: agora.env
 
 ```bash
 mkdir -p "$HOME/my-asr-demo"
@@ -47,7 +43,7 @@ AGORA_MODEL_FILES=(
 AGORA_CONFIG
 ```
 
-### 2. 加载配置并检查环境
+### Load the configuration and check the device
 
 ```bash
 source "$HOME/my-asr-demo/agora.env"
@@ -57,38 +53,38 @@ curl -fL https://raw.githubusercontent.com/APLUX-Agora/audio8-asr-infinite-demo/
 "$AGORA_PYTHON" "$AGORA_WORKSPACE/check-environment.py"
 ```
 
-配置中的路径、SoC、系统、模型目标由网页按选型填好。独立使用时可自行修改；修改后重新 source 再检查。使用 Bash 执行，因为模型文件列表采用 Bash 数组。检查脚本只读取环境并确保 workspace 可写，不安装软件。CHECKED 是静态条件满足；FAILED 先修正；NEEDS_SETUP 在环境搭建中补齐；REVIEW 按板卡文档确认。
+Agora fills the values from your selections. When using the repository directly, edit the [same template](../agora/agora.env.example) yourself. Use Bash because the model-file list is a Bash array. After changing parameters, source the file again and repeat the check. CHECKED means a static condition matches; fix FAILED items, install NEEDS_SETUP prerequisites in step 3, and review BSP/driver details for REVIEW items. The check does not prove inference compatibility.
 
-## 2. 获取代码
+## 2. Get the code
 
-第一次直接 clone。已有代码时跳过这步；需要更新时在代码目录执行 git pull --ff-only。
+Clone the public repository for the first installation. Skip cloning if you already have a checkout; update it explicitly when needed.
 
 ```bash
 git clone "$AGORA_CODE_REPO" "$AGORA_CODE_DIR"
 cd "$AGORA_CODE_DIR"
 ```
 
-已有代码时跳过 clone，不会自动更新或覆盖。要更新时先在代码目录处理自己的修改，再执行 `git pull --ff-only`。clone 提示目录已存在时，不要删除用户文件，换一个 workspace 或使用已有 checkout。
+Skip clone for an existing checkout. To update, enter the code directory, preserve or commit your changes, then run `git pull --ff-only`. If the destination already exists, use that checkout or choose a new workspace; do not delete user files just to make clone succeed.
 
-## 3. 环境搭建
+## 3. Set up dependencies
 
-按顺序逐条执行，报错先处理，不继续后面的安装。已有系统依赖时跳过相应安装，项目使用独立 venv。
+Run commands in order. Resolve an error before continuing. Skip system dependencies that are already installed, and use a project venv.
 
-### 系统运行时（云真机已预置，可跳过）
+### System runtime: preinstalled on the cloud device
 
 ```bash
 sudo aid-pkg install aidlite-sdk
 sudo aid-pkg install aidlite-qnn248
 ```
 
-### 系统工具（缺少时安装）
+### System utilities: install if missing
 
 ```bash
 sudo apt-get update
 sudo apt-get install -y git ffmpeg libsndfile1 python3-venv
 ```
 
-### 项目虚拟环境
+### Project virtual environment
 
 ```bash
 cd "$AGORA_CODE_DIR"
@@ -97,11 +93,11 @@ cd "$AGORA_CODE_DIR"
 .venv/bin/python -m pip check
 ```
 
-云真机已预置 AidLite/QNN，直接跳过第一段。自有设备安装前先看 BSP/厂商运行时说明，aid-pkg 每次安装一个包；锁占用时等待当前安装完成或联系管理员，不删锁。系统安装需要设备账号的 sudo 权限。已有系统工具时无需重复 apt 安装。venv 所用 Python 要带 venv 模块，支持的版本是 3.10/3.11/3.12；安装中报错先处理，不凭最后 pip check 成功推断前面也成功。
+The cloud board already has the shared AidLite/QNN runtime, so skip the runtime installation there. On your own device, follow the BSP/vendor requirements first. aid-pkg installs one package per command. If it reports a lock, wait for the current operation or contact the administrator; do not remove its lock file. System installation uses the device account's sudo privileges. Skip apt installation for existing tools. Select Python 3.10, 3.11, or 3.12 with matching venv support. A successful pip check does not prove earlier system installations succeeded.
 
-## 4. 获取资源
+## 4. Get model resources
 
-模型约 3.3 GiB，workspace 建议预留 8 GiB。公共仓库无需登录；仓库、下载目录和所选 SoC 文件均已在配置中声明。
+A single target is about 3.3 GiB. Allow at least 8 GiB for the workspace. Public model downloads do not require authentication; repositories, target files, and paths are declared in the configuration.
 
 ```bash
 .venv/bin/python -m pip install huggingface_hub
@@ -109,7 +105,7 @@ cd "$AGORA_CODE_DIR"
   --local-dir "$AGORA_MODELS_DIR" --include "${AGORA_MODEL_FILES[@]}"
 ```
 
-单次 HF 下载取得公共资源和所选 SoC，不下载其它 SoC 图。资源缓存可复用，--models 应指向包含 models.json 的根目录，不是 targets 子目录。80ms、160ms 用各自独立目录。要自行检查哈希，可以执行：
+The HF command downloads common files and only the selected target in one snapshot. Downloads can reuse the cache. Pass the root containing models.json to --models, not its targets directory. Keep 80ms and 160ms in separate directories. For optional integrity verification:
 
 ```bash
 cd "$AGORA_MODELS_DIR"
@@ -117,28 +113,28 @@ sha256sum --ignore-missing -c SHA256SUMS
 cd "$AGORA_CODE_DIR"
 ```
 
---ignore-missing 只检查存在的文件，允许其它未选 SoC 缺席，不代表必需资源齐全；Web 启动会继续校验必需资源与哈希。需要固定历史版本时自行使用 Git/HF 原生 revision 选项，默认指南使用 main。
+--ignore-missing checks present files and permits unselected SoC files to be absent; it does not prove package completeness. Web startup also checks required resources and hashes. Use native Git/HF revision options if you need a fixed historical version; the standard guide follows main.
 
-## 5. 运行测试
+## 5. Run a test
 
-文件识别与 Web Demo 按需选择一个运行。20 秒样例会显示加载、识别和完成；Web 服务在当前终端运行，Ctrl+C 停止。
+Choose either the 20-second file example or the Web Demo. The file example reports loading, transcription, and completion. Stop the foreground web service with Ctrl+C.
 
-### 20 秒文件识别
+### 20-second file transcription
 
 ```bash
 .venv/bin/python examples/python/transcribe_file.py examples/audio/quickstart_en_20s.wav \
   --models "$AGORA_MODELS_DIR" --clock-ms "$A8_CLOCK_MS" --lang en
 ```
 
-### Web Demo（按需启动）
+### Web Demo: start when needed
 
 ```bash
 demo/run.sh --models "$AGORA_MODELS_DIR" --port "$A8_PORT"
 ```
 
-文件示例依次输出 `[1/3] Loading model`、`[2/3] Transcribing`、`[3/3] Transcription complete`，然后输出文本与 finish_reason、audio、wall。文本在文件识别完成后返回，供应商加载日志可能穿插；首次用20秒样例即可，10分钟音频留作后续可选测试。
+The file example prints [1/3] Loading model, [2/3] Transcribing, and [3/3] Transcription complete, followed by text and finish_reason/audio/wall. File text is returned on completion; vendor messages may appear between stages. Start with the 20-second sample, then optionally use the longer recordings.
 
-Web 服务会先检查并加载模型，等待终端显示监听地址。云真机：在完整远程桌面的浏览器打开 `http://localhost:8765/`，Agora 会话页点“开启声音”。自己的设备：设备本机打开 localhost，同一网络电脑使用 `http://<板卡IP>:8765/`；若配置改端口则使用对应端口。Start 开始，Stop 停止识别，服务终端 Ctrl+C 结束服务。文件测试和 Web 启动分别选择，不自动串起来执行。
+The Web Demo checks resources and loads the model before opening its port. Wait for the listening message. On a cloud device, open http://localhost:8765/ in the remote desktop browser and enable sound in the Agora session page. On your own board, use localhost on the board or http://<board-ip>:8765/ from a computer on the same network; use the configured port if changed. Start begins transcription, Stop ends it, and Ctrl+C in the service terminal stops the server. File and Web tests are separate choices.
 
-20秒音频来源与许可见 [媒体署名](MEDIA_ATTRIBUTION.md#agora-quickstart-audio)。
+See [sample attribution](MEDIA_ATTRIBUTION.md#agora-quickstart-audio) for the 20-second audio source, license, and changes.
 
