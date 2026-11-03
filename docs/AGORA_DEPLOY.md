@@ -51,9 +51,10 @@ AGORA_CONFIG
 
 ```bash
 source "$HOME/my-asr-demo/agora.env"
+mkdir -p "$AGORA_WORKSPACE"
 curl -fL https://raw.githubusercontent.com/APLUX-Agora/audio8-asr-infinite-demo/main/tools/check-environment.py \
   -o "$AGORA_WORKSPACE/check-environment.py"
-python3 "$AGORA_WORKSPACE/check-environment.py"
+"$AGORA_PYTHON" "$AGORA_WORKSPACE/check-environment.py"
 ```
 
 配置中的路径、SoC、系统、模型目标由网页按选型填好。独立使用时可自行修改；修改后重新 source 再检查。使用 Bash 执行，因为模型文件列表采用 Bash 数组。检查脚本只读取环境并确保 workspace 可写，不安装软件。CHECKED 是静态条件满足；FAILED 先修正；NEEDS_SETUP 在环境搭建中补齐；REVIEW 按板卡文档确认。
