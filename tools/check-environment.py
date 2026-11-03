@@ -64,13 +64,19 @@ def main():
     parser.add_argument('--os', default=os.environ.get('AGORA_OS', 'ubuntu'))
     args = parser.parse_args()
     if not args.soc or not args.ubuntu:
-        parser.error('Source agora.env first, or supply --soc and --ubuntu')
+        parser.error('Set AGORA_SOC first, or supply --soc and --ubuntu')
     results = inspect_device(Path(args.workspace).expanduser().absolute(), args.soc, args.ubuntu, args.os)
     for result in results:
         print(f"[{result['status']}] {result['check']} | Expected: {result['expected']} | Actual: {result['actual']}")
     failed = sum(r['status'] == 'FAILED' for r in results)
     pending = sum(r['status'] in ('NEEDS_SETUP', 'REVIEW') for r in results)
     print(f'\nChecks complete: {failed} failed, {pending} need setup or review. Static checks do not qualify model inference.')
+    if failed:
+        print('STOP: Do not continue. Correct hardware/system selections or workspace problems, then rerun this check.')
+    elif pending:
+        print('NEXT: Resolve NEEDS_SETUP in step 3 and confirm REVIEW items against the board documentation, then rerun this check.')
+    else:
+        print('READY: Environment checks passed. Continue to the next step.')
     return 1 if failed else 2 if pending else 0
 
 

@@ -1,38 +1,31 @@
 # Agora deployment guide
 
-Use normal Git, Git LFS, Python, and shell commands. Agora tasks and direct GitHub users share the same small configuration file. Each task uses an independent workspace and may optionally rent a cloud device.
-
-## Get your configuration
-
-- **Using Agora:** select your content and hardware, download the prefilled agora.env, and save it on the device. You do not need to copy a shell heredoc from the webpage.
-- **Using GitHub directly:** download the [same template](../agora/agora.env.example), then edit its values in your preferred editor:
-
-```bash
-curl -fL https://raw.githubusercontent.com/APLUX-Agora/audio8-asr-infinite-demo/main/agora/agora.env.example -o agora.env
-```
-
-| Parameter | Meaning |
-| --- | --- |
-| AGORA_WORKSPACE | Your custom workspace path; use one directory per task |
-| AGORA_SOC | Target SoC: QCS8550, QCS8625, IQ8, or IQ9 |
-
-GitHub and HF repository URLs appear directly in the commands below. They are not environment variables. The code directory is workspace/code and model data is workspace/resources. The package owns its application defaults. Opening a new terminal? Source the saved agora.env again.
+Use normal Git, Python, and shell commands. Agora and direct GitHub users follow
+the same steps. Each task uses an independent workspace.
 
 ## 1. Check the environment
 
-Save agora.env on the device. In the directory containing the file, source it and check the device. The global configuration declares common deployment information only.
-
-### Load the configuration and check the device
+Set these two variables in the device terminal. The workspace path/name is yours;
+Agora fills in the selected SoC. No configuration file transfer is required.
 
 ```bash
-source ./agora.env
-mkdir -p "$AGORA_WORKSPACE"
+export AGORA_WORKSPACE="$HOME/my-asr-demo"
+export AGORA_SOC='QCS8550'
+```
+
+```bash
+mkdir -p "$AGORA_WORKSPACE" &&
 curl -fL https://raw.githubusercontent.com/APLUX-Agora/audio8-asr-infinite-demo/main/tools/check-environment.py \
-  -o "$AGORA_WORKSPACE/check-environment.py"
+  -o "$AGORA_WORKSPACE/check-environment.py" &&
 python3 "$AGORA_WORKSPACE/check-environment.py" --soc "$AGORA_SOC" --ubuntu 22.04
 ```
 
-The example expects Ubuntu 22.04 for QCS8550/QCS8625. Use --ubuntu 24.04 for IQ8/IQ9. The script checks expected versus actual conditions and ensures the workspace is writable. It does not install packages or generate another configuration file. CHECKED means a static condition matches; fix FAILED items, install NEEDS_SETUP prerequisites in step 3, and review BSP/driver details for REVIEW items. Static checks do not qualify inference.
+Use Ubuntu 22.04 for QCS8550/QCS8625 and 24.04 for IQ8/IQ9 in this demo.
+`CHECKED` matches an expected static condition. Stop at `FAILED`, correct the
+hardware/system selection or workspace problem, then rerun the check. Resolve
+`NEEDS_SETUP` in step 3 and confirm `REVIEW` items against the board documentation.
+Static checks do not qualify model inference. Opening a new terminal? Set the
+same two variables again before activating the project's venv.
 
 ## 2. Get the code
 
@@ -74,7 +67,7 @@ pip install --upgrade huggingface_hub
 pip check
 ```
 
-Keep using this activated terminal for the remaining steps. In a new terminal, source your saved agora.env, change to "$AGORA_WORKSPACE/code", and run source .venv/bin/activate before continuing.
+Keep using this activated terminal for the remaining steps. In a new terminal, set the same two variables from step 1, change to "$AGORA_WORKSPACE/code", and run source .venv/bin/activate before continuing.
 
 The cloud board already has AidLite/QNN; skip that installation there. On your own board, follow BSP/vendor prerequisites first. aid-pkg installs one package per command. Wait for an occupied package lock or contact the administrator; do not remove the lock. System installation requires the device account's sudo privileges. The selected system python3 must support venv and be CPython3.10/3.11/3.12. Stop at an installation error rather than assuming a later pip check validates earlier system operations.
 

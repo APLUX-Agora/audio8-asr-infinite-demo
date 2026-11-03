@@ -14,13 +14,15 @@ SDK version 0.9.0 supports the configurable models.json version 2 package.
 
 ## Agora deployment
 
-Use standard Git, Python venv, Git LFS, and project commands. No Agora CLI is required.
+Use standard Git, Python venv, and the official HF CLI. No Agora CLI is required.
+Set only **AGORA_WORKSPACE** and **AGORA_SOC** in the device terminal, then follow
+the [five-step deployment guide](docs/AGORA_DEPLOY.md). No configuration file needs
+to be downloaded or transferred. Agora provides the same commands with your
+selected hardware filled in.
 
-**The global configuration contains common deployment information only:** workspace, content ID, code/resource repositories and versions, SoC, and operating system. Copy the [configuration template](agora/agora.env.example) and edit it yourself, or download the same format prefilled by Agora from your content/hardware selections. Save it on the device and source it once in Bash.
-
-Follow the [deployment guide](docs/AGORA_DEPLOY.md). Agora displays the corresponding steps in Chinese; this repository and the HF model cards are in English.
-
-The Audio8 clock is read from the selected package's models.json. The web port is a normal application launch option. Neither belongs in the global configuration. The global configuration contains only AGORA_WORKSPACE and AGORA_SOC. Use the explicit GitHub URL to clone code and the official HF CLI to download common resources and the selected main/targets/<SoC> directory. Each task has an independent workspace; developers do not maintain file-selection filters.
+Model-specific defaults belong to the package: the Audio8 clock comes from
+models.json, and the Web port is a normal launch option. Repository URLs appear
+directly in the clone and download commands.
 
 Every workspace uses the same directory convention:
 
@@ -31,7 +33,7 @@ $AGORA_WORKSPACE/
 └── check-environment.py
 ```
 
-Use a separate workspace for a different content/hardware combination to avoid mixing checkouts or model targets. Existing checkout updates remain your responsibility. Source the saved global configuration again in a new terminal.
+Use a separate workspace for a different content/hardware combination to avoid mixing checkouts or model targets. Existing checkout updates remain your responsibility. Set the two global variables again in a new terminal.
 
 ## Supported platforms
 
