@@ -1,4 +1,4 @@
-# Audio8-ASR-Infinite Demo
+# Audio8-ASR-Infinite Demo · Agora
 
 Streaming speech recognition on Qualcomm devices, powered by Edge0's [Audio8-ASR-Infinite](https://huggingface.co/Edge0/Audio8-ASR-Infinite). Includes a Web Demo, Python examples and C++ integration example.
 
@@ -12,57 +12,41 @@ Source: Lorna Mitchell, FOSDEM 2025, **CC BY 2.0 BE**. Original credits are reta
 
 SDK version 0.9.0 supports the configurable models.json version 2 package.
 
-## 1. Install
+## Agora 开发者部署
 
-Choose one installed CPython interpreter: **3.10, 3.11 or 3.12**. All three were verified on QCS8550 / Ubuntu 22.04 AArch64 with the same SDK and model package. The selected interpreter must provide the `venv` module; the `python3-venv` package supplies it for Ubuntu's default Python. Validation covered both the 80ms and 160ms models; see [SDK compatibility](sdk/README.md#compatibility).
+本仓库是面向 Agora 的独立副本。采用普通 Git、Python venv、Hugging Face CLI 和项目脚本，不封装 Agora CLI。参数集中放在 `agora-run.json`；环境检查通过后生成 `agora-env.sh`，后续命令加载它。配置中不保存 SSH 密钥、HF token 或 sudo 密码。
 
-```bash
-git clone https://github.com/APLUX-Pandora/audio8-asr-infinite-demo.git
-cd audio8-asr-infinite-demo
-sudo aid-pkg install aidlite-sdk aidlite-qnn248
-sudo apt install ffmpeg libsndfile1 python3-venv
-DEMO_PYTHON=python3.10  # Or python3.11 / python3.12; choose one installed interpreter.
-"$DEMO_PYTHON" -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m pip check
+**从 [完整部署指南](docs/AGORA_DEPLOY.md) 开始。** 网页与该指南使用相同的五个环节：
+
+1. 环境检查：自定义 workspace，校验 JSON 参数与真实设备，逐项显示预期、实际和结果。
+2. 获取代码：通过 HTTPS clone 公共仓库；已有代码时保留，更新由开发者决定。
+3. 环境搭建：分开确认系统运行时、系统工具和项目 venv；前置失败不继续当前段。
+4. 获取资源：从对应 `-agora` HF 仓库下载公共文件及一个 SoC，校验已下载文件。
+5. 运行测试：先用 20 秒文件样例，再按需启动 Web Demo；两种测试独立执行。
+
+默认示例工作目录可任意修改，不固定在租约目录或仓库内：
+
+```text
+~/my-asr-demo/
+├── agora-run.json                      # 可编辑的运行声明
+├── check-environment.py                # 只检查，不自动安装
+├── agora-env.sh                        # 由检查脚本生成，不手工维护
+├── audio8-asr-infinite-demo/      # Git 代码与 .venv
+└── models/audio8-160ms/                 # HF 模型根目录，含 models.json
 ```
 
-`requirements.txt` also installs the matched Python SDK into this Demo's `.venv`.
-For integration in another application, see [SDK installation](sdk/PYTHON_PACKAGE.md).
+修改 JSON 后重新运行检查。终端和远程桌面都使用同一用户主目录；切换终端不会自动继承 shell 变量，每段命令开头加载参数文件即可。`agora/demo.json` 描述项目资源与目标，不是安装执行器。
 
-## 2. Get the model
+## 支持范围
 
-The recommended configuration is **160ms / QCS8550**:
+SDK 0.9.0；CPython 3.10 / 3.11 / 3.12。实际验收范围为 QCS8550 / Ubuntu 22.04 / AidLite 2.5.0.284 / QNN 2.48，含 80ms 和 160ms。HF 同时有 QCS8625、IQ8/QCS8275、IQ9/QCS9075 资源，但存在模型文件不等于完整运行链路已通过验收。其它 SoC、Ubuntu 24.04/26.04 必须另做真机验证，不在此承诺兼容。
 
-```bash
-.venv/bin/python -m pip install huggingface_hub
-REPO=APLUX-Pandora/Audio8-ASR-Infinite-160ms
-REV=a3f645da5a4ab0583b4b1376ff76c6f56b91426f
-DEST=models/audio8-160ms
-TARGET=qcs8550_qnn248
-.venv/bin/hf download "$REPO" --revision "$REV" --local-dir "$DEST" --exclude "targets/*"
-.venv/bin/hf download "$REPO" --revision "$REV" --local-dir "$DEST" --include "targets/$TARGET/*"
-```
+模型仓库：
 
-The entry point is `models/audio8-160ms/models.json`; other SoC graphs are not downloaded.
-For complete **80ms and 160ms** download/startup/example steps and other SoCs, see [model setup](docs/MODEL_SETUP.md). Silero VAD is bundled with the Demo.
+- [160ms Agora 资源](https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-160ms)
+- [80ms Agora 资源](https://huggingface.co/APLUX-Agora/Audio8-ASR-Infinite-80ms)
 
-## 3. Run the Web Demo
-
-```bash
-A8_CLOCK_MS=160 demo/run.sh --models models/audio8-160ms --port 8765
-```
-
-Open `http://<board-ip>:8765/`. Select a built-in video or upload your own.
-See the [Web guide](demo/README.md) for hotwords and other controls.
-
-## 4. Run a Python example
-
-```bash
-.venv/bin/python examples/python/transcribe_file.py examples/audio/jobs_keynote_10min_16k.flac --models models/audio8-160ms --clock-ms 160 --lang en
-```
-
-For streaming, Chinese audio and the compilable C++ example, see [examples](examples/README.md).
+本仓库与两个 HF 模型仓库均公开，Git 使用 HTTPS、HF 匿名下载即可。若改用私有分支或受控模型，按服务原生方式单独认证，不在配置文件中保存凭据。模型下载和目录说明见 [MODEL_SETUP.md](docs/MODEL_SETUP.md)。
 
 ## API reference
 

@@ -23,3 +23,7 @@ APLUX/Pandora proprietary SDK agreement does not replace the source video's Crea
 This attribution applies to the FOSDEM material in the README recording, not to the other built-in videos.
 
 Original MP4 SHA-256: `5b22b4564c1c4e10cf0f76c4d3a0dbf012cb6c61434790d1a4144612e0b144fd`.
+
+## Agora quickstart audio
+
+`examples/audio/quickstart_en_20s.wav` is the audio track from 00:34–00:54 of this repository’s `docs/demo.mp4`, converted to mono 16 kHz PCM16 WAV. It retains the original Lorna Mitchell / FOSDEM 2025 recording’s CC BY 2.0 BE terms, attribution and source links above. Changes: excerpt selection, audio extraction, resampling and channel conversion. No endorsement is implied.

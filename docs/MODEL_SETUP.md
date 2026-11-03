@@ -1,100 +1,56 @@
-# Model setup
+# 模型资源与目录
 
-Run these commands from the Demo checkout after [installation](../README.md#1-install). Python SDK integration uses the same package roots; no model download is performed by pip or `from_pretrained`.
+参数来自第一步生成的 agora-env.sh，不在这里重复定义仓库、SoC 和路径。完整流程见 [Agora 部署指南](AGORA_DEPLOY.md)。
 
-## Supported targets
+## 获取资源
 
-| SoC | QNN | TARGET |
-| --- | --- | --- |
-| QCS8550 | 2.48 | `qcs8550_qnn248` |
-| QCS8625 | 2.48 | `qcs8625_qnn248` |
-| QCS8275 / IQ8 | 2.48 | `qcs8275_qnn248` |
-| QCS9075 / IQ9 | 2.48 | `qcs9075_qnn248` |
-
-Both variants provide these target resources. Native SDK and Python package **0.9.0** support this models.json version 2 layout. Both 80ms and 160ms are qualified on QCS8550 / Ubuntu 22.04 / AidLite 2.5.0.284 / QNN 2.48 with CPython 3.10, 3.11 and 3.12. Other SoC NPU execution and Ubuntu releases remain untested.
-
-Download common resources and exactly one target into each independent package root. The examples below select QCS8550; replace `TARGET` using the table for another board. Both downloads for a variant use its same immutable commit. Authentication is required only while the repository is private or access-controlled; public downloads do not require login.
-
-## 160ms
+单目标约 3.3 GiB，整个 workspace 建议预留至少 8 GiB。公共模型无需 HF 登录。仓库、硬件目标和下载目录从配置读取；如后续使用受控资源，token 也不写进配置。
 
 ```bash
-.venv/bin/python -m pip install huggingface_hub
-REPO=APLUX-Pandora/Audio8-ASR-Infinite-160ms
-REV=a3f645da5a4ab0583b4b1376ff76c6f56b91426f
-DEST=models/audio8-160ms
-TARGET=qcs8550_qnn248
-.venv/bin/hf download "$REPO" --revision "$REV" --local-dir "$DEST" --exclude "targets/*"
-.venv/bin/hf download "$REPO" --revision "$REV" --local-dir "$DEST" --include "targets/$TARGET/*"
+. "$HOME/my-asr-demo/agora-env.sh" &&
+(
+  set -eu
+  cd "$AGORA_CODE_DIR"
+  .venv/bin/python -m pip install huggingface_hub
+  .venv/bin/hf download "$AGORA_MODEL_REPO" --local-dir "$AGORA_MODELS_DIR" --include \
+    README.md models.json agora-model.json SHA256SUMS NOTICE "LICENSES/*" \
+    embedding.bin mel_filters.npy rotation.npy token_bytes.json tokenizer.json \
+    "frontend/*" "prefix/*" "semantic_vad/*" "targets/$AGORA_MODEL_TARGET/*"
+  (cd "$AGORA_MODELS_DIR" && sha256sum --ignore-missing -c SHA256SUMS)
+  echo "CHECKED: downloaded files match checksums"
+)
 ```
 
-Run the Web Demo (stop an existing instance before reusing its port):
+本仓库公开，直接下载即可；使用受控模型时另行执行 hf auth login，不要把 token 写入声明。单次下载按 main 解析同一版本，用户无需复制长 revision；要复现实验时可自行记录 hf 返回的快照或使用原生 --revision。Git 和 HF 独立版本，不假定其 commit 相同。
 
-```bash
-A8_CLOCK_MS=160 demo/run.sh --models models/audio8-160ms --port 8765
+## SoC 资源目标
+
+| SoC | 系统配置 | 模型目标 | 验收状态 |
+| --- | --- | --- | --- |
+| QCS8550 | Ubuntu 22.04 | qcs8550_qnn248 | 已在本板验证 |
+| QCS8625 | Ubuntu 22.04 | qcs8625_qnn248 | 资源可获取，运行待验证 |
+| IQ8 / QCS8275 | Ubuntu 24.04 | qcs8275_qnn248 | 资源可获取，运行待验证 |
+| IQ9 / QCS9075 | Ubuntu 24.04 | qcs9075_qnn248 | 资源可获取，运行待验证 |
+
+后面三项是资源/系统选择映射，不是 SDK 与整条 BSP 链路的兼容承诺。Ubuntu 26.04 未验收。80ms、160ms 各有独立 Agora HF 仓库，选择时同时更新 JSON 中的时钟、模型仓库及目录。
+
+## 包结构
+
+```text
+$AGORA_MODELS_DIR/
+├── models.json                # SDK 读取的模型包入口
+├── agora-model.json           # Agora 资源声明，SDK 不依赖它
+├── SHA256SUMS
+├── embedding.bin / *.npy / tokenizer.json / token_bytes.json
+├── frontend/ prefix/ semantic_vad/
+├── targets/<所选SoC>_qnn248/
+└── LICENSES/ NOTICE README.md
 ```
 
-Open `http://<board-ip>:8765/`, select a video and press Start. Independent Python examples:
+单目标约 3.3 GiB。无需解压或挪动文件；--models 传包含 models.json 的包根目录。公共资源和所选目标一次下载，不下载其它目标图。当前改造没有改变模型张量、图、models.json 格式或 SDK 0.9.0 ABI；原有 [模型包约定](../sdk/MODEL_PACKAGE.md)、[Python API](../sdk/PYTHON_API.md) 和 [许可范围](../LICENSING.md) 继续有效。
 
-```bash
-.venv/bin/python examples/python/transcribe_file.py examples/audio/jobs_keynote_10min_16k.flac --models models/audio8-160ms --clock-ms 160 --lang en
-.venv/bin/python examples/python/stream_file.py examples/audio/xiaomi18pro_highlights_10min_16k.flac --models models/audio8-160ms --clock-ms 160 --lang zh
-```
+## 校验与重复执行
 
-## 80ms
+SHA256SUMS 检查下载文件完整性，--ignore-missing 允许其它未选 SoC 缺席，但不会证明包齐全。Web 启动还会验证必需路径、资源及哈希。HF 下载可复用缓存；修改 workspace 或时钟后重新运行环境检查，切勿将两个模型覆盖在一个目录。
 
-```bash
-.venv/bin/python -m pip install huggingface_hub
-REPO=APLUX-Pandora/Audio8-ASR-Infinite-80ms
-REV=a06231291d4264bee67cb7eabb0bdde663eb8032
-DEST=models/audio8-80ms
-TARGET=qcs8550_qnn248
-.venv/bin/hf download "$REPO" --revision "$REV" --local-dir "$DEST" --exclude "targets/*"
-.venv/bin/hf download "$REPO" --revision "$REV" --local-dir "$DEST" --include "targets/$TARGET/*"
-```
-
-Run the Web Demo (stop the 160ms instance before reusing its port):
-
-```bash
-A8_CLOCK_MS=80 demo/run.sh --models models/audio8-80ms --port 8765
-```
-
-Open `http://<board-ip>:8765/`, select a video and press Start. Independent Python examples:
-
-```bash
-.venv/bin/python examples/python/transcribe_file.py examples/audio/jobs_keynote_10min_16k.flac --models models/audio8-80ms --clock-ms 80 --lang en
-.venv/bin/python examples/python/stream_file.py examples/audio/xiaomi18pro_highlights_10min_16k.flac --models models/audio8-80ms --clock-ms 80 --lang zh
-```
-
-## Package roots and selection
-
-Each destination directly contains `models.json`, common resources, `SHA256SUMS`, `LICENSES/`, `NOTICE`, and only the downloaded `targets/<soc>_qnn248/`. No extraction or manual file moves are needed. Never overlay the two models into the same directory. Their HF model cards may be downloaded as data-directory READMEs; these installation instructions remain here in `docs/`.
-
-All resource paths come from `models.json` version 2; see the [package contract](../sdk/MODEL_PACKAGE.md). Pass the package root, not its `targets/` directory. Examples/Web prefer explicit `--models` over `A8_MODELS`; without either they discover a flat checkout `models/models.json` or a unique immediate child package. With both models downloaded, select a root explicitly. Restart with the other root to change variants; the Web clock control only offers clocks in the selected root.
-
-The installed SDK in another application requires an explicit model root or `A8_MODELS`; it does not search beside site-packages. For example:
-
-```python
-from audio8_asr import ASRModel
-
-with ASRModel.from_pretrained("/absolute/path/to/models/audio8-80ms", clock_ms=80) as model:
-    result = model.transcribe("speech.wav", language="en")
-    print(result.text)
-```
-
-When multiple complete SoC targets are installed in one package, set `A8_TARGET=<soc>_qnn248` at application startup. This selects a declared installation; it does not detect the board or establish hardware compatibility. Normal single-target downloads need no selector.
-
-## Integrity and compatibility
-
-To check downloaded files, from the checkout root:
-
-```bash
-(cd models/audio8-160ms && sha256sum --ignore-missing -c SHA256SUMS)
-# For 80ms:
-(cd models/audio8-80ms && sha256sum --ignore-missing -c SHA256SUMS)
-```
-
-`--ignore-missing` permits intentionally absent other-SoC graphs, but verifies present files only; it does not establish package completeness. Web preflight additionally checks configured required resources and hashes before loading/replacing a model. Native loading validates configured paths, required files and raw embedding size; independent SDK calls do not automatically hash every resource. Checksums detect damaged downloads, not an attacker replacing both files and the checksum list.
-
-Use the pinned resources above with this configuration-driven SDK. Legacy SDK releases remain paired with their documented historical revisions; legacy manifest formats 1/2 remain supported, but the prototype models.json version 1 is rejected. No model tensors or graph bytes changed for this documentation update. HF repositories keep only main without Git version tags; reproducibility uses commit IDs.
-
-Silero VAD is bundled in `demo/assets/` for the business-layer silence gate; model semantic VAD remains in the HF package. AidLite/QNN and the board BSP are external prerequisites. See [SDK requirements](../sdk/README.md), [Web usage](../demo/README.md), [Python API](../sdk/PYTHON_API.md) and [C++ examples](../examples/README.md#c-file-transcription).
+模型资源是数据，GitHub 提供应用、SDK、依赖与示例。HF README 不维护另一套安装流程，统一链接回上述部署指南。资源和预编译 SDK 保留 Pandora 与上游许可，不因 Agora 命名变化而改变授权。

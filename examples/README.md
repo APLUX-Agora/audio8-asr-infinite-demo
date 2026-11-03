@@ -1,12 +1,14 @@
 # SDK examples
 
-Run from the checkout root after [installation](../README.md#1-install) and [model placement](../docs/MODEL_SETUP.md).
+Run from the checkout root after [installation](../docs/AGORA_DEPLOY.md#3-环境搭建) and [model placement](../docs/MODEL_SETUP.md).
 The Python programs use this Demo's `.venv` and its pip-installed SDK; they do not import SDK files from the checkout. They use the editable SDK audio adapter for WAV/FLAC/MP3, mono/stereo conversion and 16kHz resampling. More than two channels require explicit selection in application code. Their inference calls use the shipped Python SDK; the C++ example calls the same library's C ABI.
 
 ## Python file transcription
 
+For the first run, use the 20-second sample. It prints model loading / transcribing / complete phases; the transcript is returned at the end. Set --models explicitly for a model package outside the checkout; follow the [Agora guide](../docs/AGORA_DEPLOY.md).
+
 ```bash
-.venv/bin/python examples/python/transcribe_file.py examples/audio/jobs_keynote_10min_16k.flac --lang en
+.venv/bin/python examples/python/transcribe_file.py examples/audio/quickstart_en_20s.wav --lang en
 ```
 
 Outputs text to stdout and application diagnostics to stderr. AidLite/RPC may also emit

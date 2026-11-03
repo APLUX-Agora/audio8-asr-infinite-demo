@@ -33,7 +33,7 @@ See [package details](PYTHON_PACKAGE.md) and [Python API](PYTHON_API.md).
 This SDK is tested on QCS8550 / Ubuntu22.04 with the 80ms and 160ms models.
 Historical SDK 0.6.1 userspace checks do not qualify this native 0.9.0 build on Ubuntu 24.04/26.04.
 Other chip targets and Ubuntu releases require their own qualification before broader claims.
-CPython **3.10, 3.11 and 3.12** passed independent SDK inference, streaming, Web playback/transcription/EOF and idle/active SIGTERM/SIGINT checks with both clocks. Choose one interpreter with matching `venv` support and create this checkout's `.venv`; see [installation](../README.md#1-install). This does not extend the OS/BSP/NPU test scope. AidLite/QNN remain external prerequisites;
+CPython **3.10, 3.11 and 3.12** passed independent SDK inference, streaming, Web playback/transcription/EOF and idle/active SIGTERM/SIGINT checks with both clocks. Choose one interpreter with matching `venv` support and create this checkout's `.venv`; see [installation](../docs/AGORA_DEPLOY.md#3-环境搭建). This does not extend the OS/BSP/NPU test scope. AidLite/QNN remain external prerequisites;
 see the [native environment and loader requirements](NATIVE_INTEGRATION.md#target-and-linking).
 
 ## C API and Python integration

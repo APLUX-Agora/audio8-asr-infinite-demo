@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "id": "live-transcribe",
+  "name": "Audio8-ASR-Infinite 流式转录",
+  "source": {
+    "repository": "https://github.com/APLUX-Agora/audio8-asr-infinite-demo.git",
+    "revision": "main"
+  },
+  "workspace": {
+    "configurable": true,
+    "code": "audio8-asr-infinite-demo",
+    "models": "models/audio8-{clock_ms}ms"
+  },
+  "variants": [
+    {
+      "clock_ms": 80,
+      "repository": "APLUX-Agora/Audio8-ASR-Infinite-80ms",
+      "entrypoint": "models.json"
+    },
+    {
+      "clock_ms": 160,
+      "repository": "APLUX-Agora/Audio8-ASR-Infinite-160ms",
+      "entrypoint": "models.json"
+    }
+  ],
+  "targets": {
+    "QCS8550": {
+      "ubuntu": "22.04",
+      "model_target": "qcs8550_qnn248",
+      "qualified": true
+    },
+    "QCS8625": {
+      "ubuntu": "22.04",
+      "model_target": "qcs8625_qnn248",
+      "qualified": false
+    },
+    "IQ8": {
+      "ubuntu": "24.04",
+      "model_target": "qcs8275_qnn248",
+      "qualified": false
+    },
+    "IQ9": {
+      "ubuntu": "24.04",
+      "model_target": "qcs9075_qnn248",
+      "qualified": false
+    }
+  },
+  "runtime": {
+    "sdk": "0.9.0",
+    "qnn": "2.48",
+    "aidlite_qualified": "2.5.0.284",
+    "python": [
+      "3.10",
+      "3.11",
+      "3.12"
+    ]
+  },
+  "documentation": "docs/AGORA_DEPLOY.md",
+  "note": "声明资源和兼容性，不自动执行安装；未验收组合不可视为推理兼容承诺。"
+}
